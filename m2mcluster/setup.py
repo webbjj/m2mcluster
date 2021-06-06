@@ -9,11 +9,11 @@ from matplotlib import pyplot
 from amuse.units import nbody_system,units
 from amuse.community.hermite0.interface import Hermite
 
-def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, epsilon=0.1 | units.parsec, W0=0.,imf='kroupa'):
+def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa'):
 
 	#Setup nbody converter
 	converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
-	epsilon2=epsilon**2.
+	epsilon2=softening**2.
 
 	if W0==0.:
 	    stars=new_plummer_sphere(N,converter)

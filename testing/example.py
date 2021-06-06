@@ -25,7 +25,7 @@ import numpy as np
 ocluster=m2m.setup_star_cluster(N=1000, Mcluster = 1000 | units.MSun, Rcluster = 9. |units.parsec, W0=7.)
 
 #Measure artifical cluster's density profile asssuming an equal number of stars per bin
-orlower,orad,orupper,orho=m2m.density(ocluster,bins=True,bintype='num')
+orlower,orad,orupper,orho=m2m.density(ocluster,bins=True,bintype='fix')
 
 
 # In[4]:
@@ -34,14 +34,14 @@ orlower,orad,orupper,orho=m2m.density(ocluster,bins=True,bintype='num')
 #Initialize an M2M Star cluster
 #Specify number of iterations to run algorithm for
 #Specify number of workers to be used by Nbody code
-cluster=m2m.starcluster(number_of_iterations=100,number_of_workers=1)
+cluster=m2m.starcluster(number_of_iterations=1,number_of_workers=1)
 
 
 # In[5]:
 
 
 #Add the "observed" cluster density profile as an observable
-cluster.add_observable(orlower,orupper,orho,'density',2)
+cluster.add_observable(orlower,orad,orupper,orho,'density',2)
 
 
 # In[6]:
@@ -62,7 +62,8 @@ cluster.xy_plot(filename='xyplot0.png')
 
 
 #Compare initial density profiles
-cluster.rho_prof(filename='rhoplot0.png')
+#cluster.rho_prof(filename='rhoplot0.png')
+cluster.rho_prof()
 
 
 # In[9]:
@@ -77,7 +78,7 @@ for i in range(0,cluster.number_of_iterations):
     #Evolve the model cluster forward for 10% of its dynamical time
     cluster.evolve(tend=0.1*cluster.tdyn)
     #Run the M2M algorithm, which will adjust all of the stellar masses based on kernel function
-    cluster.evaluate(kernel=None,m2mepsilon=1.0e-3,plot=False)
+    cluster.evaluate(kernel='gaussian',m2mepsilon=1.0e-3,plot=False,sigma=0.2)
     #Compare the new model density profile to the observed one
     cluster.rho_prof(filename='%s.png' % str(i).zfill(5))
     #Centre the star cluster and find determine Nbody conversion scales for next integration
@@ -87,16 +88,10 @@ for i in range(0,cluster.number_of_iterations):
 outfile.close()
 
 
-# In[ ]:
+# In[10]:
 
 
-
-
-
-# In[ ]:
-
-
-
+cluster.rho_prof()
 
 
 # In[ ]:

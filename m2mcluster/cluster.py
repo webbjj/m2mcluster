@@ -16,21 +16,21 @@ from .functions import *
 
 class starcluster(object):
 
-	def __init__(self,number_of_iterations=100, number_of_workers=1):
+	def __init__(self, kernel=None, number_of_iterations=100, number_of_workers=1,*kwargs):
 		self.number_of_iterations=number_of_iterations
 		self.number_of_workers=number_of_workers
 		self.n_iteration=0
 
-
-	def add_observable(self,xlower,xupper,y,parameter='density',ndim=2):
+	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=2):
 		self.xlowerobs=xlower
+		self.xmidobs=x
 		self.xupperobs=xupper
 		self.yobs=y
 		self.parameter=parameter
 
 		self.ndim=ndim
 
-		self.observation=[self.xlowerobs,self.xupperobs,self.yobs,self.parameter,self.ndim]
+		self.observation=[self.xlowerobs,self.xmidobs,self.xupperobs,self.yobs,self.parameter,self.ndim]
 
 
 	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa'):
@@ -54,7 +54,6 @@ class starcluster(object):
 		self.stars.move_to_center()
 
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
-
 
 		return self.stars,self.converter
 
@@ -102,8 +101,9 @@ class starcluster(object):
 
 		return self.stars
 
-	def evaluate(self,kernel=None,m2mepsilon=10.0**-4.,debug=False, plot=False, filename=None):
-		self.stars,self.criteria=made_to_measure(self.stars,self.observation,self.n_iteration,kernel=kernel,m2mepsilon=m2mepsilon,debug=debug,plot=plot,filename=filename)
+	def evaluate(self,kernel=None,m2mepsilon=10.0**-4.,debug=False, plot=False, filename=None, **kwargs):
+			
+		self.stars,self.criteria=made_to_measure(self.stars,self.observation,self.n_iteration,kernel=kernel,m2mepsilon=m2mepsilon,debug=debug,plot=plot,filename=filename,**kwargs)
 
 		return self.stars,self.criteria
 

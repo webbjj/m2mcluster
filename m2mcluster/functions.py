@@ -7,23 +7,19 @@ import operator
 def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
     return np.sqrt(Rcluster**3/(G*Mcluster))
 
-def density(particles,rlower=None,rupper=None,ndim=2,nbin=20,bins=False, bintype='num'):
+def density(particles,rlower=None,rmid=None,rupper=None,ndim=2,nbin=20,bins=False, bintype='fix',forcerzero=True):
 
     r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
 
     if rlower is None:
         if bintype=='num':
-            rlower, rad, rupper, rhist=nbinmaker(r,nbin=nbin)
+            rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin,forcerzero=forcerzero)
         elif bintype =='fix':
-            rlower, rad, rupper, rhist=binmaker(r,nbin=nbin)
-
-    else:
-        rad=(rlower+rupper)/2.
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin,forcerzero=forcerzero)
 
     rho=np.array([])
 
-
-    for i in range(0,len(rad)):
+    for i in range(0,len(rmid)):
                     
         indx=(r > rlower[i]) * (r <= rupper[i])
 
@@ -37,7 +33,7 @@ def density(particles,rlower=None,rupper=None,ndim=2,nbin=20,bins=False, bintype
         rho=np.append(rho,dens)
 
     if bins:
-        return rlower,rad,rupper,rho
+        return rlower,rmid,rupper,rho
     else:
         return rho
 
@@ -46,7 +42,7 @@ def chi2(mod,obs):
     return np.sum(((mod-obs)/obs)**2.)
 
 
-def nbinmaker(x, nbin=10, nsum=False):
+def nbinmaker(x, nbin=10, nsum=False,forcerzero=True):
     """Split an array into bins with equal numbers of elements
 
     Parameters
@@ -57,6 +53,8 @@ def nbinmaker(x, nbin=10, nsum=False):
       number of bins
     nsum : bool
       return number of points in each bin (default: False)
+    forcerzero : bool
+      ensure first lower limit is zero
 
     Returns
     -------
@@ -91,6 +89,8 @@ def nbinmaker(x, nbin=10, nsum=False):
         indx = int(float(i) * float(len(x)) / float(nbin))
         x_lower = np.append(x_lower, x[xorder[indx]])
 
+    if forcerzero: x_lower[0]=0.
+
     x_upper=x_lower[1:]
     x_upper=np.append(x_upper,np.amax(x))
 
@@ -114,7 +114,7 @@ def nbinmaker(x, nbin=10, nsum=False):
         return x_lower, x_mid, x_upper, x_hist
 
 
-def binmaker(x, nbin=10, nsum=False, steptype="linear"):
+def binmaker(x, nbin=10, nsum=False, steptype="linear", forcerzero=True):
     """Split an array into bins of equal width
 
     Parameters
@@ -127,6 +127,8 @@ def binmaker(x, nbin=10, nsum=False, steptype="linear"):
       return number of points in each bin (default: False)
     steptype : str
       linear or logarithmic steps (default: linear)
+    forcerzero : bool
+      ensure first lower limit is zero
 
     Returns
     -------
@@ -159,6 +161,8 @@ def binmaker(x, nbin=10, nsum=False, steptype="linear"):
 
     x_lower = steps[:-1]
     x_upper = steps[1:]
+    
+    if forcerzero: x_lower[0]=0.
 
     x_mid = (x_upper + x_lower) / 2.0
 

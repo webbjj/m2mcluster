@@ -33,20 +33,21 @@ def positions_plot(stars,filename=None):
 
 def density_profile(stars,observation,filename=None):
 
-    rlower,rupper,rho, param, ndim=observation
-    rad=(rlower+rupper)/2.
+    rlower,rmid,rupper,rho, param, ndim=observation
     vol=(4./3.)*numpy.pi*(rupper**3.-rlower**3.)
     area=numpy.pi*(rupper**2.-rlower**2.)
 
-    mod_rho=density(stars,rlower,rupper,ndim)
+    mod_rho=density(stars,rlower,rmid, rupper,ndim)
 
     #Compare density profiles
     mindx=(mod_rho > 0.)
-    pyplot.plot(numpy.log10(rad[mindx]),numpy.log10(mod_rho[mindx]),'r',label='Model')
-    pyplot.plot(numpy.log10(rad[mindx]),numpy.log10(mod_rho[mindx]),'ro')
+    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(mod_rho[mindx]),'r',label='Model')
+    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(mod_rho[mindx]),'ro')
 
-    pyplot.plot(numpy.log10(rad),numpy.log10(rho),'k',label='Observations')
-    pyplot.plot(numpy.log10(rad),numpy.log10(rho),'ko')
+    mindx=(rho > 0.)
+
+    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(rho[mindx]),'k',label='Observations')
+    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(rho[mindx]),'ko')
 
     pyplot.legend()
     pyplot.xlabel('$\log_{10} r$ (pc)')
