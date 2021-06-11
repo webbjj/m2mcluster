@@ -1,0 +1,14 @@
+Step= 0  t= 0  dt= 0 
+Nf= 0000001000  total-Nf= 0000001000  ex-frac= 0  iter= 1
+work-load balance: 1  max=0.003661 avg=0.003661 PE0=0.003661
+particle-load balance: 1
+max. nodes: 522, filled: 0.435
+part/sec=273149 | 273149  ia/part=230.31 (0)
+
+Step= 0  t= 0  dt= 0 
+Nf= 0000001000  total-Nf= 0000002000  ex-frac= 0  iter= 1
+work-load balance: 1  max=0.00667 avg=0.00667 PE0=0.00667
+particle-load balance: 1
+max. nodes: 522, filled: 0.435
+part/sec=149925 | 149925  ia/part=304.41 (0)
+

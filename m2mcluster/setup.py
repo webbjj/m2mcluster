@@ -7,7 +7,6 @@ import numpy
 from amuse.lab import *
 from matplotlib import pyplot
 from amuse.units import nbody_system,units
-from amuse.community.hermite0.interface import Hermite
 
 def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa'):
 
@@ -29,4 +28,4 @@ def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units
 	stars.scale_to_standard(convert_nbody=converter, smoothing_length_squared = epsilon2)
 	stars.move_to_center()
 
-	return stars
+	return stars,converter

@@ -3,7 +3,7 @@
 
 import matplotlib.pyplot as pyplot
 from amuse.plot import scatter
-import numpy 
+import numpy as np
 from amuse.units import nbody_system,units
 #from galpy.util import bovy_plot
 
@@ -11,8 +11,6 @@ from .functions import density
 
 #import seaborn as sns
 #df = sns.load_dataset('iris')
-
-import numpy as np
 
 def positions_plot(stars,filename=None):
         
@@ -34,20 +32,26 @@ def positions_plot(stars,filename=None):
 def density_profile(stars,observation,filename=None):
 
     rlower,rmid,rupper,rho, param, ndim=observation
-    vol=(4./3.)*numpy.pi*(rupper**3.-rlower**3.)
-    area=numpy.pi*(rupper**2.-rlower**2.)
+    vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
+    area=np.pi*(rupper**2.-rlower**2.)
 
     mod_rho=density(stars,rlower,rmid, rupper,ndim)
 
+    mod_rlower,mod_rmid,mod_rupper,mod_rho_full=density(stars,ndim=ndim,bins=True,bintype='num')
+
     #Compare density profiles
     mindx=(mod_rho > 0.)
-    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(mod_rho[mindx]),'r',label='Model')
-    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(mod_rho[mindx]),'ro')
+    pyplot.loglog(rmid[mindx],mod_rho[mindx],'r',label='Model')
+    pyplot.loglog(rmid[mindx],mod_rho[mindx],'ro')
+
+    mindx=(mod_rho_full > 0.)
+    pyplot.loglog(mod_rmid[mindx],mod_rho_full[mindx],'r--',label='Model Full')
+    pyplot.loglog(mod_rmid[mindx],mod_rho_full[mindx],'ro')
 
     mindx=(rho > 0.)
 
-    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(rho[mindx]),'k',label='Observations')
-    pyplot.plot(numpy.log10(rmid[mindx]),numpy.log10(rho[mindx]),'ko')
+    pyplot.loglog(rmid[mindx],rho[mindx],'k',label='Observations')
+    pyplot.loglog(rmid[mindx],rho[mindx],'ko')
 
     pyplot.legend()
     pyplot.xlabel('$\log_{10} r$ (pc)')

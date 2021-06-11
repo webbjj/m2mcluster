@@ -7,7 +7,10 @@ import numpy
 from amuse.lab import *
 from matplotlib import pyplot
 from amuse.units import nbody_system,units
-from amuse.community.hermite0.interface import Hermite
+from amuse.community.hermite.interface import Hermite
+from amuse.community.bhtree.interface import BHTree
+from amuse.community.gadget2.interface import Gadget2
+
 import logging
 
 from .plot import *
@@ -66,15 +69,28 @@ class starcluster(object):
 
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
 		if gravity_code=='BHTree':
-			self.gravity_code=BHTree(self.converter,number_of_workers=self.number_of_workers)
+			self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+			self.gravity_code.parameters.epsilon_squared = self.softening2
+			self.gravity_code.parameters.timestep=dt
 
+			theta=kwargs.get('theta',0.6)
+			self.gravity_code.parameters.opening_angle=theta
 
-		theta=kwargs.get('theta',0.6)
+		elif gravity_code=='Hermite':
+			self.gravity_code=Hermite(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+			self.gravity_code.parameters.epsilon_squared = self.softening2
+			self.gravity_code.parameters.dt_dia=dt
 
-		self.gravity_code.parameters.epsilon_squared = self.softening2
-		self.gravity_code.parameters.opening_angle=theta
-		self.gravity_code.parameters.timestep=dt
-		self.gravity_code.commit_particles()
+			dt_param=kwargs.get('dt_param',0.03)
+			self.gravity_code.parameters.dt_param=dt_param
+
+		elif gravity_code=='Gadget2':
+			self.gravity_code=Gadget2(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+			self.gravity_code.parameters.epsilon_squared = self.softening2
+
+			theta=kwargs.get('theta',0.6)
+			self.gravity_code.parameters.opening_angle=theta
+
 
 	def evolve(self,tend=1. | units.Myr):
 
@@ -83,6 +99,7 @@ class starcluster(object):
 
 
 		self.gravity_code.particles.add_particles(self.stars)
+		self.gravity_code.commit_particles()
 
 		channel_from_stars_to_cluster=self.stars.new_channel_to(self.gravity_code.particles, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
 		channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
