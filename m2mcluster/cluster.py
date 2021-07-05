@@ -56,16 +56,16 @@ class starcluster(object):
 
 		if imf=='kroupa':
 			if mmax <= 0.5 | units.MSun:
-				stars=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=-1.3)
+				self.stars=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=-1.3)
 
 			elif mmin >=0.5 | units.MSun:
-				stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=-2.3)
+				self.stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=-2.3)
 
 			else:
-				stars.mass=new_broken_power_law_mass_distribution(N,mass_boundaries= [mmin.value_in(units.MSun), 0.5, mmax.value_in(units.MSun)] | units.MSun,alphas= [-1.3,-2.3],mass_max=mmax )
+				self.stars.mass=new_broken_power_law_mass_distribution(N,mass_boundaries= [mmin.value_in(units.MSun), 0.5, mmax.value_in(units.MSun)] | units.MSun,alphas= [-1.3,-2.3],mass_max=mmax )
 		
 		elif imf=='salpeter':
-			stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=alpha)
+			self.stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=alpha)
 
 		    
 		self.stars.scale_to_standard(convert_nbody=self.converter, smoothing_length_squared = self.softening2)
