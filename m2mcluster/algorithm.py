@@ -13,10 +13,11 @@ from scipy.stats import chisquare
 
 from amuse.ext.LagrangianRadii import LagrangianRadii
 
-def made_to_measure(stars,observation,n_iteration,kernel=None,m2mepsilon=10.0**6.,debug=False,plot=False,filename=None,**kwargs):
+def made_to_measure(stars,observed_rho,observed_sigv,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,kernel=None,debug=False,plot=False,filename=None,**kwargs,):
     
     #Get the observed diensity profile
-    rlower,rmid,rupper,rho, param, ndim=observation
+    rlower,rmid,rupper,rho, param, ndim=observed_rho
+
     #Calculate volume of bin shells
     vol=(4./3.)*numpy.pi*(rupper**3.-rlower**3.)
 
@@ -26,84 +27,83 @@ def made_to_measure(stars,observation,n_iteration,kernel=None,m2mepsilon=10.0**6
     if plot:
         density_profile(stars,observation,filename=filename)
 
+    #Entropy:
+    #S=-mu*np.sum(stars.mass.value_in(units.MSun)*np.log(stars.mass.value_in(units.MSun)/w0.value_in(units.MSun)-1.))
+    dsdw=-mu*np.log(stars.mass.value_in(units.MSun)/w0)
+
     #Calculate delta_j (yj/Yj-1)
     delta_j=mod_rho/rho-1.
-    #Set z_j equal to inverse of volume of the bin
-    Z_j=1.0/vol
+    Y_j=rho
+
+    #D. Syer & S. Tremaine 1996 - Equation 15
+    if delta_j_tilde is None:
+        delta_j_tilde=delta_j
+    else:
+        d_delta_j_tilde_dt=alpha*(delta_j-delta_j_tilde)
+        delta_j_tilde=delta_j-d_delta_j_tilde_dt/alpha
+
 
     if debug: print('OBS_RHO', rho)
     if debug: print('MOD_RHO', mod_rho)
     if debug: print('DELTA = ',delta_j)
-    if debug: print('Z_J: ',Z_j)
+    if debug: print('DELTA_TILDE: ',delta_j_tilde)
 
-    #Initialize Gaussian kernel if called
-    sigma=kwargs.get('sigma',None)
+    #Initialize Gaussian kernel if called (WIP)
     if kernel == 'gaussian':
         #D. Syer & S. Tremaine 1996 - Section 2.2 - use bin centre as mean of Gaussian and sigma of 1/2 bin width
-        if sigma is None:
-            sigma=(rupper-rlower)/2.
+        sigma=kwargs.get('sigma',(rupper-rlower)/2.)
 
     r=numpy.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.+(stars.z.value_in(units.parsec))**2.)
-
 
     #Initialize rate of change in weights within each radial bin to be zero
     dwdt=np.zeros(len(stars))
 
+    #Find mean dwdt in each bin for debugging
+    if debug:
+        dwdtr=np.zeros(len(rmid))
+        ndwdtr=np.zeros(len(rmid))
 
     #Find dwdt for each star
     for i in range(0,len(stars)):
 
         if kernel is None:
-            K_j=((r[i] >= rlower) * (r[i] <= rupper))
+            rindx=((r[i] >= rlower) * (r[i] <= rupper))
 
-
-            #JASON - If stars are not within any bin, match to closest bin or leave alone?
-            if np.sum(K_j)==0 and r[i]>rupper[-1]:
-                K_j[-1]=True
-            elif np.sum(K_j)==0 and r[i]<rlower[0]:
-                K_j[0]=True
-
-
-
-            K_j=K_j*(1./vol) #D. Syer & S. Tremaine 1996 - Section 2.2, set K_j to 1/vol or 0, such that K_j/Z_j = 1 or 0
+            #D. Syer & S. Tremaine 1996 - Section 2.2, set K_j to 1/vol or 0, such that K_j/Z_j = 1 or 0
+            #Similarly K_j/Y_j will be the number of stars in the bin 
+            K_j=rindx*(1./vol) 
 
 
         elif kernel == 'gaussian':
 
             rindx=((r[i] >= rlower) * (r[i] <= rupper))
 
-            if np.sum(rindx)==0 and r[i]>rupper[-1]:
-                rmean=rmid[-1]
-                sig=sigma[-1]
-            elif np.sum(rindx)==0 and r[i]<rlower[0]:
-                rmean=rmid[0]
-                sig=sigma[0]
-            else:
+            if np.sum(rindx)!=0:
                 rmean=rmid[rindx][0]
                 sig=sigma[rindx][0]
 
-            #JASON - confirm that I call the gaussian at the bin centre, not the star's position?
-            K_j=gaussian_kernel(rmean,rmean,sig)
+                K_j=gaussian_kernel(rmean,rmean,sig)
+            else:
+                K_j=np.zeros(len(rlower))
 
-        if debug: print('DEBUG: ',K_j,delta_j,Z_j,K_j*delta_j)
+            K_j=K_j*(1./vol) 
+
 
         #D. Syer & S. Tremaine 1996 - Equation 4
-        dwdt[i]=-1.*m2mepsilon*stars[i].mass.value_in(units.MSun)*numpy.sum(K_j*delta_j/Z_j)
+        dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(mu*dsdw[i]-numpy.sum(K_j*delta_j_tilde/Y_j))
         
 
-        #JASON - Do I need to multiple by dt here? What units? Or does this kind of balance out with m2mepsilon?
         stars[i].mass += dwdt[i] | units.MSun
 
-        if stars[i].mass < 0.0 | units.MSun:
-            stars[i].mass = 0.0 | units.MSun
+        if debug:
+            dwdtr[rindx]+=dwdt[i]
+            ndwdtr[rindx]+=1.
 
     #Goodness of fit criteria - D. Syer & S. Tremaine 1996 - Equation 22
-    #JASON - I never do anything with this at the moment. Related to not including a penalty?
-    #JASOn - check functional form with and without kernel
-    chi_squared=chi2(mod_rho,rho,sigma)
+    chi_squared=chi2(mod_rho,rho)
 
-    if debug: print('WEIGHTING: ',delta_j,dwdt[0],dwdt[i],chi_squared,m2mepsilon)
-
+    if debug: print('WEIGHTING: ',np.amin(dwdt),np.mean(dwdt),np.amax(dwdt),np.amin(dsdw),np.mean(dsdw),np.amax(dsdw),chi_squared)
+    if debug: print('MEAN DWDT: ',dwdtr[ndwdtr>0]/ndwdtr[ndwdtr>0])
 
 
-    return stars,chi_squared
+    return stars,chi_squared,delta_j_tilde

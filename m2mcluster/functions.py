@@ -7,13 +7,15 @@ import operator
 def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
     return np.sqrt(Rcluster**3/(G*Mcluster))
 
-def density(particles,rlower=None,rmid=None,rupper=None,ndim=2,nbin=20,bins=False, bintype='fix'):
+def density(particles,rlower=None,rmid=None,rupper=None,ndim=3,nbin=20,bins=False, bintype='fix'):
 
-    r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+    if ndim==3:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+    elif ndim==2:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
 
     if rlower is None:
-
-        print('DEBUG:',len(r),len(particles),np.sum(particles.mass.value_in(units.MSun) > 0))
 
         if bintype=='num':
             rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
@@ -25,14 +27,16 @@ def density(particles,rlower=None,rmid=None,rupper=None,ndim=2,nbin=20,bins=Fals
     for i in range(0,len(rmid)):
                     
         indx=(r > rlower[i]) * (r <= rupper[i])
-
-        if ndim==2:
-            area=np.pi*(rupper[i]**2.)-np.pi*(rlower[i]**2.)
-        elif ndim==3:
-            area=4.0*np.pi*(rupper[i]**3-rlower[i]**3.)/3.
-
         msum=np.sum(particles[indx].mass).value_in(units.MSun)
-        dens=msum/area
+
+        if ndim==3:
+            vol=4.0*np.pi*(rupper[i]**3-rlower[i]**3.)/3.
+            dens=msum/vol
+
+        elif ndim==2:
+            area=np.pi*(rupper[i]**2.)-np.pi*(rlower[i]**2.)
+            dens=msum/area
+
         rho=np.append(rho,dens)
 
     if bins:
@@ -40,14 +44,47 @@ def density(particles,rlower=None,rmid=None,rupper=None,ndim=2,nbin=20,bins=Fals
     else:
         return rho
 
+def velocity_dispersion(particles,rlower=None,rmid=None,rupper=None,ndim=3,nbin=20,bins=False, bintype='fix'):
+
+    if ndim==3:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+        v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
+
+    elif ndim==2:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+        v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.)
+    elif ndim==1:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+        v=particles.vx.value_in(units.kms)
+
+    if rlower is None:
+
+        if bintype=='num':
+            rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+        elif bintype =='fix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+
+    sigv=np.array([])
+
+    for i in range(0,len(rmid)):
+                    
+        indx=(r > rlower[i]) * (r <= rupper[i])
+        
+        if np.sum(indx)>0:
+            sigv=np.append(sigv,np.std(v[indx]))
+        else:
+            sigv=np.append(sigv,0.0)
+
+    if bins:
+        return rlower,rmid,rupper,sigv
+    else:
+        return sigv
+
 def chi2(mod,obs,sigma=None):
 
     delta_j=mod/obs-1.
 
-    if sigma is None:
-        chi_squared=np.sum((delta_j)**2.)/len(delta_j)
-    else:
-        chi_squared=np.sum((delta_j/sigma)**2.)/len(delta_j)
+    chi_squared=np.sum((delta_j)**2.)/len(delta_j)
 
     return chi_squared
 
