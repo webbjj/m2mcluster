@@ -8,15 +8,17 @@ from .functions import *
 from .plot import *
 from .kernels import *
 import numpy
-import matplotlib.pyplot as pyplot
 from scipy.stats import chisquare
 
 from amuse.ext.LagrangianRadii import LagrangianRadii
 
-def made_to_measure(stars,observed_rho,observed_sigv,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,kernel=None,debug=False,plot=False,filename=None,**kwargs,):
+def made_to_measure(stars,observed_rho,observed_sigv,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,kernel=None,rhov2=False,debug=False,**kwargs,):
     
     #Get the observed diensity profile
     rlower,rmid,rupper,rho, param, ndim=observed_rho
+
+    if rhov2:
+        rlowerv,rmidv,rupperv,sigv, paramv, ndimv=observed_sigv
 
     #Calculate volume of bin shells
     vol=(4./3.)*numpy.pi*(rupper**3.-rlower**3.)
@@ -24,8 +26,8 @@ def made_to_measure(stars,observed_rho,observed_sigv,w0,epsilon=10.0**-4.,mu=1.,
     #Get the model cluster's current density using the same radial bins as the observed density profile
     mod_rho=density(stars,rlower,rmid,rupper,ndim)
 
-    if plot:
-        density_profile(stars,observation,filename=filename)
+    if rhov2:
+        mod_sig=velocity_dispersion(stars,rlowerv,rmidv, rupperv,ndimv)
 
     #Entropy:
     #S=-mu*np.sum(stars.mass.value_in(units.MSun)*np.log(stars.mass.value_in(units.MSun)/w0.value_in(units.MSun)-1.))
@@ -53,7 +55,10 @@ def made_to_measure(stars,observed_rho,observed_sigv,w0,epsilon=10.0**-4.,mu=1.,
         #D. Syer & S. Tremaine 1996 - Section 2.2 - use bin centre as mean of Gaussian and sigma of 1/2 bin width
         sigma=kwargs.get('sigma',(rupper-rlower)/2.)
 
-    r=numpy.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.+(stars.z.value_in(units.parsec))**2.)
+    if ndim==3:
+        r=numpy.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.+(stars.z.value_in(units.parsec))**2.)
+    elif ndim==2:
+        r=numpy.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.)
 
     #Initialize rate of change in weights within each radial bin to be zero
     dwdt=np.zeros(len(stars))
@@ -92,7 +97,6 @@ def made_to_measure(stars,observed_rho,observed_sigv,w0,epsilon=10.0**-4.,mu=1.,
         #D. Syer & S. Tremaine 1996 - Equation 4
         dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(mu*dsdw[i]-numpy.sum(K_j*delta_j_tilde/Y_j))
         
-
         stars[i].mass += dwdt[i] | units.MSun
 
         if debug:

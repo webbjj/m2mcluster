@@ -19,7 +19,7 @@ from .functions import *
 
 class starcluster(object):
 
-	def __init__(self, kernel=None, number_of_iterations=100, number_of_workers=1,debug=False,*kwargs):
+	def __init__(self, kernel=None, number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
 		self.number_of_iterations=number_of_iterations
 		self.number_of_workers=number_of_workers
 
@@ -28,20 +28,23 @@ class starcluster(object):
 
 		self.debug=debug
 
-	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3):
-		self.xlowerobs=xlower
-		self.xmidobs=x
-		self.xupperobs=xupper
-		self.yobs=y
-		self.parameter=parameter
+		self.niteration=0
 
-		self.ndim=ndim
+		self.observed_rho=None
+		self.observed_sigv=None
+
+		if outfile==None:
+			self.outfile=open('m2moutfile.dat','w')
+		else:
+			self.outfile=outfile
+
+	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3):
 
 		if parameter=='density':
-			self.observed_rho=[self.xlowerobs,self.xmidobs,self.xupperobs,self.yobs,self.parameter,self.ndim]
+			self.observed_rho=[xlower,x,xupper,y,parameter,ndim]
 
 		if parameter=='velocity':
-			self.observed_sigv=[self.xlowerobs,self.xmidobs,self.xupperobs,self.yobs,self.parameter,self.ndim]
+			self.observed_sigv=[xlower,x,xupper,y,parameter,ndim]
 
 	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=100 | units.MSun, alpha=-1.3):
 
@@ -66,6 +69,9 @@ class starcluster(object):
 		
 		elif imf=='salpeter':
 			self.stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=alpha)
+
+		elif imf=='single':
+			self.stars.mass=np.ones(len(self.stars))*mmin
 
 		    
 		self.stars.scale_to_standard(convert_nbody=self.converter, smoothing_length_squared = self.softening2)
@@ -117,8 +123,6 @@ class starcluster(object):
 		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
 
-		print(Mcluster.value_in(units.MSun),Rcluster,self.tdyn)
-
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
 		if gravity_code=='BHTree':
 			self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
@@ -147,7 +151,7 @@ class starcluster(object):
 	def evolve(self,tend=1. | units.Myr):
 
 
-		print('TIME UNITS: ',tend.as_quantity_in(units.Myr))
+		print('TIME UNITS: ',tend.as_quantity_in(units.Myr),len(self.stars),self.stars.total_mass().value_in(units.MSun),self.stars.virial_radius().value_in(units.parsec))
 
 
 		self.gravity_code.particles.add_particles(self.stars)
@@ -155,8 +159,6 @@ class starcluster(object):
 
 		channel_from_stars_to_cluster=self.stars.new_channel_to(self.gravity_code.particles, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
 		channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
-
-
 
 		self.gravity_code.evolve_model(tend)
 
@@ -168,9 +170,12 @@ class starcluster(object):
 
 		return self.stars
 
-	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,kernel=None, plot=False, filename=None, **kwargs):
+	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,kernel=None, rhov2=False, **kwargs):
 			
-		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observed_rho,self.observed_sigv,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,delta_j_tilde=delta_j_tilde,kernel=kernel,debug=self.debug,plot=plot,filename=filename,**kwargs)
+		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observed_rho,self.observed_sigv,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,delta_j_tilde=delta_j_tilde,kernel=kernel,rhov2=rhov2,debug=self.debug,**kwargs)
+
+		self.niteration+=1
+
 
 		return self.stars,self.criteria, self.delta_j_tilde
 
@@ -182,6 +187,70 @@ class starcluster(object):
 
 	def sigv_prof(self,filename=None):
 		velocity_dispersion_profile(self.stars, self.observed_sigv,filename=filename)
+
+	def writeout(self,outfile=None):
+
+		if outfile==None:
+			if self.outfile is None:
+				self.outfile=open('m2moutfile.dat','w')
+
+			outfile=self.outfile
+
+		if self.niteration==0:
+			outfile.write('%i,' % self.niteration)
+
+			if self.observed_rho is not None:
+				rlower,rmid,rupper,rho_obs,param,ndim=self.observed_rho
+
+				for r in rmid:
+					outfile.write('%f,' % r)
+
+				for rho in rho_obs:
+					outfile.write('%f,' % rho)
+
+
+			if self.observed_sigv is not None:
+				rlower,rmid,rupper,sig_obs,param,ndim=self.observed_sigv
+
+				for r in rmid:
+					outfile.write('%f,' % r)
+
+				for sig in sig_obs:
+					outfile.write('%f,' % sig)
+
+
+			outfile.write('%f\n' % 0.0)
+
+		outfile.write('%i,' % self.niteration)
+
+		if self.observed_rho is not None:
+			rlower,rmid,rupper,rho_obs,param,ndim=self.observed_rho
+			mod_rho=density(self.stars,rlower,rmid,rupper,ndim)
+
+			for r in rmid:
+				outfile.write('%f,' % r)
+
+			for rho in mod_rho:
+				outfile.write('%f,' % rho)
+
+
+		if self.observed_sigv is not None:
+			rlower,rmid,rupper,sig_obs,param,ndim=self.observed_sigv
+			mod_sigv=velocity_dispersion(self.stars,rlower,rmid, rupper,ndim)
+
+			for r in rmid:
+				outfile.write('%f,' % r)
+
+			for sig in mod_sigv:
+				outfile.write('%f,' % sig)
+
+		if self.niteration==0:
+			self.criteria=chi2(mod_rho,rho_obs)
+
+		outfile.write('%f\n' % self.criteria)
+
+	def snapout(self):
+		write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
 
 
 
