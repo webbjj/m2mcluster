@@ -8,7 +8,7 @@ from amuse.lab import *
 from matplotlib import pyplot
 from amuse.units import nbody_system,units
 
-def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=100 | units.MSun, alpha=-1.3):
+def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3):
 
 		#Setup nbody converter
 		converter=nbody_system.nbody_to_si(Mcluster,Rcluster)

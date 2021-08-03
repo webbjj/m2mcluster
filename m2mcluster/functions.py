@@ -4,10 +4,12 @@ from amuse.units import nbody_system,units
 from amuse.ext.LagrangianRadii import LagrangianRadii
 import operator
 
+import galpy.util.bovy_coords as coords
+
 def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
     return np.sqrt(Rcluster**3/(G*Mcluster))
 
-def density(particles,rlower=None,rmid=None,rupper=None,ndim=3,nbin=20,bins=False, bintype='fix'):
+def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False, bintype='fix'):
 
     if ndim==3:
         r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
@@ -44,18 +46,37 @@ def density(particles,rlower=None,rmid=None,rupper=None,ndim=3,nbin=20,bins=Fals
     else:
         return rho
 
-def velocity_dispersion(particles,rlower=None,rmid=None,rupper=None,ndim=3,nbin=20,bins=False, bintype='fix'):
+def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False, bintype='fix'):
 
-    if ndim==3:
-        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
-        v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
 
-    elif ndim==2:
-        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
-        v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.)
-    elif ndim==1:
-        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
-        v=particles.vx.value_in(units.kms)
+    if param=='vR2' or param=='vT2':
+
+        if ndim==3:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)      
+        elif ndim==2 or ndim==1:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+        R,theta,z=coords.rect_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+
+        vR,vT,vz=coords.rect_to_cyl_vec(particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+
+        if param=='vR2':
+            v=vR
+        elif param=='vT2':
+            v=vT
+
+    else:
+
+        if ndim==3:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+            v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
+
+        elif ndim==2:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+            v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.)
+        elif ndim==1:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+            v=particles.vx.value_in(units.kms)
 
     if rlower is None:
 
@@ -64,30 +85,21 @@ def velocity_dispersion(particles,rlower=None,rmid=None,rupper=None,ndim=3,nbin=
         elif bintype =='fix':
             rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
 
-    sigv=np.array([])
+    v2=np.array([])
 
     for i in range(0,len(rmid)):
                     
         indx=(r > rlower[i]) * (r <= rupper[i])
         
         if np.sum(indx)>0:
-            sigv=np.append(sigv,np.std(v[indx]))
+            v2=np.append(v2,np.mean((v[indx])**2.))
         else:
-            sigv=np.append(sigv,0.0)
+            v2=np.append(v2,0.0)
 
     if bins:
-        return rlower,rmid,rupper,sigv
+        return rlower,rmid,rupper,v2
     else:
-        return sigv
-
-def chi2(mod,obs,sigma=None):
-
-    delta_j=mod/obs-1.
-
-    chi_squared=np.sum((delta_j)**2.)/len(delta_j)
-
-    return chi_squared
-
+        return v2
 
 def nbinmaker(x, nbin=10, nsum=False):
     """Split an array into bins with equal numbers of elements
