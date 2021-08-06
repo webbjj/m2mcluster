@@ -16,10 +16,11 @@ import logging
 from .plot import *
 from .algorithm import *
 from .functions import *
+from .setup import setup_star_cluster
 
 class starcluster(object):
 
-	def __init__(self, kernel=None, number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
+	def __init__(self, kernel='identifier', number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
 		self.number_of_iterations=number_of_iterations
 		self.number_of_workers=number_of_workers
 
@@ -36,7 +37,7 @@ class starcluster(object):
 		else:
 			self.outfile=outfile
 
-	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,extend_outer=False):
+	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',rhov2=False,extend_outer=False):
 
 		#'rho' or 'Sigma' for 3d and 2d density
 		#'v2','vlos2','vR2','vT2','vz2' for square velocities
@@ -52,41 +53,17 @@ class starcluster(object):
 
 		if sigma is None:
 			sigma=np.ones(len(x))
-		elif extend_outer:
+		if extend_outer:
 			sigma=np.append(sigma,1.0e-10)
 
-		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma]
+		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel,rhov2]
 
 	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3):
 
-		#Setup nbody converter
-		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
+
+		self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha)
+
 		self.softening2=softening**2.
-
-		if W0==0.:
-		    self.stars=new_plummer_sphere(N,self.converter)
-		else:
-		    self.stars=new_king_model(N,W0,convert_nbody=self.converter)
-
-		if imf=='kroupa':
-			if mmax <= 0.5 | units.MSun:
-				self.stars=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=-1.3)
-
-			elif mmin >=0.5 | units.MSun:
-				self.stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=-2.3)
-
-			else:
-				self.stars.mass=new_broken_power_law_mass_distribution(N,mass_boundaries= [mmin.value_in(units.MSun), 0.5, mmax.value_in(units.MSun)] | units.MSun,alphas= [-1.3,-2.3],mass_max=mmax )
-		
-		elif imf=='salpeter':
-			self.stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=alpha)
-
-		elif imf=='single':
-			self.stars.mass=np.ones(len(self.stars))*mmin
-
-		    
-		self.stars.scale_to_standard(convert_nbody=self.converter, smoothing_length_squared = self.softening2)
-		self.stars.move_to_center()
 
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
 
@@ -182,9 +159,9 @@ class starcluster(object):
 
 		return self.stars
 
-	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,kernel=None, rhov2=False,method='Seyer', **kwargs):
+	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,method='Seyer', **kwargs):
 			
-		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,delta_j_tilde=delta_j_tilde,kernel=kernel,rhov2=rhov2,method=method,debug=self.debug,**kwargs)
+		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,delta_j_tilde=delta_j_tilde,method=method,debug=self.debug,**kwargs)
 
 		self.niteration+=1
 
@@ -213,7 +190,7 @@ class starcluster(object):
 
 
 			for oparam in self.observations:
-				rlower,rmid,rupper,obs,param,ndim,sigma=self.observations[oparam]
+				rlower,rmid,rupper,obs,param,ndim,sigma,kernel,rhov2=self.observations[oparam]
 
 				for r in rmid:
 					outfile.write('%f,' % r)
@@ -227,12 +204,11 @@ class starcluster(object):
 
 
 		for oparam in self.observations:
-			rlower,rmid,rupper,obs,param,ndim,sigma=self.observations[oparam]
+			rlower,rmid,rupper,obs,param,ndim,sigma,kernel,rhov2=self.observations[oparam]
 
 
 			if param=='rho' or param=='Sigma':
-				mod_rho=density(self.stars,rlower,rmid,rupper,param, ndim)
-
+				mod_rho=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel)
 				for r in rmid:
 					outfile.write('%f,' % r)
 
@@ -241,7 +217,7 @@ class starcluster(object):
 
 			if param=='v2' or param=='vlos2' or param=='vR2' or param=='vT2' or param=='vz2':
 
-				mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim)
+				mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel, rhov2=rhov2)
 
 				for r in rmid:
 					outfile.write('%f,' % r)

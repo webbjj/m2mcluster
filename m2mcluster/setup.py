@@ -3,7 +3,7 @@ from __future__ import print_function
 #import matplotlib
 #matplotlib.use('Agg')
 
-import numpy
+import numpy as np
 from amuse.lab import *
 from matplotlib import pyplot
 from amuse.units import nbody_system,units
@@ -32,8 +32,12 @@ def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units
 		elif imf=='salpeter':
 			stars.mass=new_powerlaw_mass_distribution(number_of_particles=N,mass_min=mmin,mass_max=mmax,alpha=alpha)
 
+		elif imf=='single':
+			stars.mass=np.ones(len(stars))*mmin
+
 		    
 		stars.scale_to_standard(convert_nbody=converter, smoothing_length_squared = softening2)
 		stars.move_to_center()
 
 		return stars,converter
+

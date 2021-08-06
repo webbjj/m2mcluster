@@ -6,10 +6,47 @@ import operator
 
 import galpy.util.bovy_coords as coords
 
+from .kernels import *
+
+
 def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
     return np.sqrt(Rcluster**3/(G*Mcluster))
 
-def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False, bintype='fix'):
+def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
+
+    if kernel=='identifier':
+
+        return standard_density(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype)
+
+    else:
+
+        if ndim==3:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+        elif ndim==2:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+
+        if rlower is None:
+
+            if bintype=='num':
+                rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+            elif bintype =='fix':
+                rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        else:
+            nbin=len(rlower)
+
+        rho=np.zeros(nbin)
+
+        for i in range(0,len(r)):
+            K_j=get_kernel(r[i],rlower,rmid,rupper,kernel,**kwargs)
+            rho+=particles[i].mass.value_in(units.MSun)*K_j
+
+        if bins:
+            return rlower,rmid,rupper,rho
+        else:
+            return rho
+
+def standard_density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False, bintype='fix'):
 
     if ndim==3:
         r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
@@ -46,15 +83,139 @@ def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=2
     else:
         return rho
 
-def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False, bintype='fix'):
+def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',rhov2=False,**kwargs):
 
-
-    if param=='vR2' or param=='vT2':
+    if not rhov2 and kernel != 'standard':
 
         if ndim==3:
-            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)      
-        elif ndim==2 or ndim==1:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+        elif ndim==2:
             r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+        v2=get_v2(particles,param,ndim)
+
+
+        if rlower is None:
+
+            if bintype=='num':
+                rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+            elif bintype =='fix':
+                rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        else:
+            nbin=len(rlower)
+
+        v2prof=np.zeros(nbin)
+
+        #Normalizing kernel
+        v2norm=np.zeros(nbin)
+        rlowern=kwargs.get('rlowern',rlower)
+        rmidn=kwargs.get('rmidn',rmid)
+        ruppern=kwargs.get('ruppern',rupper)
+        kerneln=kwargs.get('kerneln',kernel)
+
+        for i in range(0,len(r)):
+            K_j=get_kernel(r[i],rlower,rmid,rupper,kernel,**kwargs)
+            v2prof+=particles[i].mass.value_in(units.MSun)*v2[i]*K_j
+
+
+            K_jn=get_kernel(r[i],rlowern,rmidn,ruppern,kerneln,**kwargs)
+            v2norm+=particles[i].mass.value_in(units.MSun)*K_jn
+
+        divindx=v2norm>0
+
+        v2prof[divindx]/=v2norm[divindx]
+
+        if bins:
+            return rlower,rmid,rupper,v2prof
+        else:
+            return v2prof
+
+
+    elif rhov2 and kernel != 'standard':
+
+        return density_weighted_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,kernel=kernel,bins=bins, bintype=bintype)
+
+
+    elif kernel=='standard':
+
+        return standard_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype,rhov2=rhov2)
+
+
+
+def density_weighted_mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix', **kwargs):
+
+    if ndim==3:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+    elif ndim==2:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+    v2=get_v2(particles,param,ndim)
+
+    if rlower is None:
+
+        if bintype=='num':
+            rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+        elif bintype =='fix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+    else:
+        nbin=len(rlower)
+
+    rhov2prof=np.zeros(nbin)
+
+    for i in range(0,len(r)):
+        K_j=get_kernel(r[i],rlower,rmid,rupper,kernel,**kwargs)
+        rhov2prof+=particles[i].mass.value_in(units.MSun)*v2[i]*K_j
+
+    if bins:
+        return rlower,rmid,rupper,rhov2prof
+    else:
+        return rhov2prof
+
+def standard_mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False,bintype='fix',rhov2=False):
+
+    if ndim==3:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+    elif ndim==2:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+    elif ndim==1:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+    v2=get_v2(particles,param,ndim)
+
+    if rlower is None:
+
+        if bintype=='num':
+            rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+        elif bintype =='fix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+    else:
+        nbin=len(rlower)
+
+    if rhov2:
+        rhoprof=standard_density(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=False, bintype=bintype)
+
+    v2prof=np.array([])
+
+    for i in range(0,len(rmid)):
+                    
+        indx=(r > rlower[i]) * (r <= rupper[i])
+        
+        if np.sum(indx)>0:
+            v2prof=np.append(v2prof,np.mean(v2[indx]))
+        else:
+            v2prof=np.append(v2prof,0.0)
+
+    if rhov2:
+        v2prof*=rhoprof
+
+    if bins:
+        return rlower,rmid,rupper,v2prof
+    else:
+        return v2prof
+
+def get_v2(particles,param,ndim):
+
+    if param=='vR2' or param=='vT2':
 
         R,theta,z=coords.rect_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
 
@@ -68,38 +229,14 @@ def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None
     else:
 
         if ndim==3:
-            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
             v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
 
         elif ndim==2:
-            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
             v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.)
         elif ndim==1:
-            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
             v=particles.vx.value_in(units.kms)
 
-    if rlower is None:
-
-        if bintype=='num':
-            rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
-        elif bintype =='fix':
-            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
-
-    v2=np.array([])
-
-    for i in range(0,len(rmid)):
-                    
-        indx=(r > rlower[i]) * (r <= rupper[i])
-        
-        if np.sum(indx)>0:
-            v2=np.append(v2,np.mean((v[indx])**2.))
-        else:
-            v2=np.append(v2,0.0)
-
-    if bins:
-        return rlower,rmid,rupper,v2
-    else:
-        return v2
+    return v*v
 
 def nbinmaker(x, nbin=10, nsum=False):
     """Split an array into bins with equal numbers of elements

@@ -29,20 +29,20 @@ def positions_plot(stars,filename=None):
         pyplot.show()
         pyplot.close()
 
-def density_profile(stars,observations,filename=None):
+def density_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
 
     if 'rho' in observations:
-        rlower,rmid,rupper,rho, param, ndim, sigma=observations['rho']
+        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel, rhov2=observations['rho']
     elif 'Sigma' in observations:
-        rlower,rmid,rupper,rho, param, ndim, sigma=observations['Sigma']
+        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel, rhov2=observations['Sigma']
 
 
     vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
     area=np.pi*(rupper**2.-rlower**2.)
 
-    mod_rho=density(stars,rlower,rmid,rupper,param,ndim)
+    mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
 
-    mod_rlower,mod_rmid,mod_rupper,mod_rho_full=density(stars,param=param,ndim=ndim,bins=True,bintype='num')
+    mod_rlower,mod_rmid,mod_rupper,mod_rho_full=density(stars,param=param,ndim=ndim,nbin=nbin,kernel=rhokernel,bins=True,bintype=bintype,**kwargs)
 
     #Compare density profiles
     mindx=(mod_rho > 0.) * (rupper < 1.e10)
@@ -73,20 +73,15 @@ def density_profile(stars,observations,filename=None):
         pyplot.show()
         pyplot.close()
 
-def mean_squared_velocity_profile(stars,observations,filename=None):
+def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
 
     for oparam in observations:
-        rlower,rmid,rupper,obs,param,ndim,sigma=observations[oparam]
+        rlower,rmid,rupper,obs,param,ndim,sigma, obskernel, rhov2 = observations[oparam]
         if param=='v2' or param=='vlos2' or param=='vR2' or param=='vT2' or param=='vz2':
-            mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim)
+            mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,rhov2=rhov2,**kwargs)
             v2=obs
 
-    vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
-    area=np.pi*(rupper**2.-rlower**2.)
-
-    mod_v2=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim)
-
-    mod_rlower,mod_rmid,mod_rupper,mod_v2_full=mean_squared_velocity(stars,param=param,ndim=ndim,bins=True,bintype='num')
+    mod_rlower,mod_rmid,mod_rupper,mod_v2_full=mean_squared_velocity(stars,param=param,ndim=ndim,nbin=nbin,bins=True,bintype=bintype,kernel=obskernel,rhov2=rhov2)
 
     #Compare density profiles
     mindx=(mod_v2 > 0.) * (rupper < 1.e10)
@@ -104,7 +99,11 @@ def mean_squared_velocity_profile(stars,observations,filename=None):
 
     pyplot.legend()
     pyplot.xlabel('$\log_{10} r$ (pc)')
-    pyplot.ylabel(r'$\log_{10} \sigma_v$ ($\rm km/s$)')
+
+    if rhov2:
+        pyplot.ylabel(r'$\log_{10} \rho <v^2>$ ($\rm ($M_{\odot}/pc^3 km/s$)')
+    else:
+        pyplot.ylabel(r'$\log_{10} <v^2>$ ($\rm km/s$)')
 
     if filename is not None:
         pyplot.savefig(filename)
