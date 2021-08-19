@@ -20,7 +20,7 @@ from .setup import setup_star_cluster
 
 class starcluster(object):
 
-	def __init__(self, kernel='identifier', number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
+	def __init__(self, kernel='identifier', calc_step=False,number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
 		self.number_of_iterations=number_of_iterations
 		self.number_of_workers=number_of_workers
 
@@ -36,6 +36,11 @@ class starcluster(object):
 			self.outfile=open('m2moutfile.dat','w')
 		else:
 			self.outfile=outfile
+
+		self.delta_j_tilde=None
+
+		self.calc_step=calc_step
+		self.step=1.
 
 	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',rhov2=False,extend_outer=False):
 
@@ -66,6 +71,9 @@ class starcluster(object):
 		self.softening2=softening**2.
 
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
+
+		if self.calc_step:
+			self.step=self.tdyn.value_in(units.Myr)
 
 		#Default weights
 		self.w0=self.stars.mass.value_in(units.MSun)
@@ -111,6 +119,9 @@ class starcluster(object):
 		Rcluster=self.stars.virial_radius()
 		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
+
+		if self.calc_step:
+			self.step=self.tdyn.value_in(units.Myr)
 
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
 		if gravity_code=='BHTree':
@@ -159,9 +170,9 @@ class starcluster(object):
 
 		return self.stars
 
-	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,method='Seyer', **kwargs):
+	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,method='Seyer', **kwargs):
 			
-		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,delta_j_tilde=delta_j_tilde,method=method,debug=self.debug,**kwargs)
+		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
 
 		self.niteration+=1
 

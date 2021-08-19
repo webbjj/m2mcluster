@@ -12,23 +12,22 @@ from scipy.stats import chisquare
 
 from amuse.ext.LagrangianRadii import LagrangianRadii
 
-def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,method='Seyer',debug=False,**kwargs,):
+def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,method='Seyer',debug=False,**kwargs,):
     
     #JO - alpha >= epsilon?
     #JO - alpha=1/dt is equivalent to no smoothing and alpha cannot be set to a larger value. Which dt? integartion time or eval time?
 
-    if (len(observations)==1 and ('rho' in observations or 'Sigma' in observations)) or method=='Seyer':
+    if (len(observations)==1 and ('rho' in observations or 'Sigma' in observations) and method != 'Bovy') or method=='Seyer':
 
-        stars,chi_squared,delta_j_tilde=made_to_measure_seyer(stars,observations,w0,epsilon,mu,alpha,delta_j_tilde,debug,**kwargs,)
+        stars,chi_squared,delta_j_tilde=made_to_measure_seyer(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs,)
         return stars,chi_squared,delta_j_tilde
 
     else:
-        print('BOVY')
-        stars,chi_squared,delta_j_tilde,delta_j2_tilde=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,delta_j_tilde,debug,**kwargs,)
-        return stars,chi_squared,delta_j_tilde,delta_j2_tilde
+        stars,chi_squared,delta_j_tilde=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs,)
+        return stars,chi_squared,delta_j_tilde
 
 
-def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j_tilde=None,debug=False,**kwargs,):
+def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
 
     #Get the observed diensity profile
     if 'rho' in observations:
@@ -50,9 +49,7 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
     if delta_j_tilde is None:
         delta_j_tilde=delta_j
     else:
-        d_delta_j_tilde_dt=alpha*(delta_j-delta_j_tilde)
-        delta_j_tilde=delta_j-d_delta_j_tilde_dt/alpha
-
+        delta_j_tilde+=step*alpha*(delta_j-delta_j_tilde)
 
     if debug: 
         print('OBS_RHO', rho)
@@ -78,10 +75,10 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
         #D. Syer & S. Tremaine 1996 - Equation 4
         dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-np.sum(dchi2)/2.)
 
-        stars[i].mass += dwdt[i] | units.MSun
+        stars[i].mass += step*dwdt[i] | units.MSun
 
         if r[i]<rupper[0] and debug:
-            print('DWDT INNERMOST: ',dwdt[i])
+            print('DWDT INNERMOST: ',epsilon,stars[i].mass.value_in(units.MSun),dsdw[i],dchi2[dchi2!=0.],(dsdw[i]-np.sum(dchi2)/2.),dwdt[i])
 
 
     #Goodness of fit criteria - D. Syer & S. Tremaine 1996 - Equation 22
@@ -92,7 +89,7 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
 
     return stars,chi_squared,delta_j_tilde
 
-def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,delta_j0_tilde=None,debug=False,**kwargs,):
+def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
     
     #Get the observed diensity profile
 
@@ -106,7 +103,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
     kernels=[]
     rhov2s=[]
 
-    for oparam in self.observations:
+    for oparam in observations:
 
         rlower,rmid,rupper,ob,param,ndim,sigma,obkernel,orhov2=observations[oparam]
         rlowers.append(rlower)
@@ -134,8 +131,8 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
     #Calculate delta_j,velocities (if necessary) and radii for each observable
     delta_j=[]
-    v2s=array([])
-    rs=array([])
+    v2s=[]
+    rs=[]
 
     for i in range(0,len(obs)):
         delta_j.append(mods[i]-obs[i])
@@ -157,11 +154,13 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
     #Bovy Equation 22/23
     if delta_j_tilde is None:
-        delta_j_tilde=delta_j
+        delta_j_tilde=[]
+        for i in range(0,len(delta_j)):
+            delta_j_tilde.append(delta_j[i])
     else:
         for i in range(0,len(delta_j_tilde)):
-            d_delta_j_tilde_dt=(alpha*(delta_j[i]-delta_j_tilde[i]))
-            delta_j_tilde[i]=delta_j[i]-d_delta_j_tilde_dt/alpha
+            delta_j_tilde[i]+=step*alpha*(delta_j[i]-delta_j_tilde[i])
+
 
     #Initialize rate of change in weights within each radial bin to be zero
     dwdt=np.zeros(len(stars))
@@ -188,14 +187,14 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-dchisum)
 
 
-        stars[i].mass += dwdt[i] | units.MSun
+        stars[i].mass += step*dwdt[i] | units.MSun
 
     #Sum over Chi2 contributions
     chi_squared=0.
     for i in range(0,len(obs)):
         chi_squared+=np.sum((delta_j_tilde[i]/sigmas[i])**2.)
 
-    return stars,chi_squared,delta_j_tilde,delta_j2_tilde
+    return stars,chi_squared,delta_j_tilde
 
 def get_dchi2(delta_j_tilde,K_j,sigma_j,v2=None):
 
