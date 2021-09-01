@@ -7,7 +7,7 @@ import numpy as np
 from amuse.units import nbody_system,units
 #from galpy.util import bovy_plot
 
-from .functions import density,mean_squared_velocity
+from .functions import density,mean_squared_velocity,density_weighted_mean_squared_velocity
 
 #import seaborn as sns
 #df = sns.load_dataset('iris')
@@ -31,83 +31,117 @@ def positions_plot(stars,filename=None):
 
 def density_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
 
-    if 'rho' in observations:
-        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel, rhov2=observations['rho']
-    elif 'Sigma' in observations:
-        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel, rhov2=observations['Sigma']
+    for oparam in observations:
+
+        if 'rho' == oparam or 'Sigma' == oparam:
+            rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel=observations[oparam]
+
+            vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
+            area=np.pi*(rupper**2.-rlower**2.)
+
+            mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
+
+            #mod_rlower,mod_rmid,mod_rupper,mod_rho_full=density(stars,param=param,ndim=ndim,nbin=nbin,kernel=rhokernel,bins=True,bintype=bintype,**kwargs)
+
+            #Compare density profiles
+            mindx=(mod_rho > 0.) * (rupper < 1.e10)
+            pyplot.loglog(rmid[mindx],mod_rho[mindx],'r',label='Model')
+            pyplot.loglog(rmid[mindx],mod_rho[mindx],'ro')
+
+            #mindx=(mod_rho_full > 0.)
+            #pyplot.loglog(mod_rmid[mindx],mod_rho_full[mindx],'r--',label='Model Full')
+            #pyplot.loglog(mod_rmid[mindx],mod_rho_full[mindx],'ro')
+
+            mindx=(rho > 0.) * (rupper < 1.e10)
+
+            pyplot.loglog(rmid[mindx],rho[mindx],'k',label='Observations')
+            pyplot.loglog(rmid[mindx],rho[mindx],'ko')
+
+            pyplot.legend()
+            pyplot.xlabel('$\log_{10} r$ (pc)')
+
+            if ndim==3:
+                pyplot.ylabel(r'$\log_{10} \rho$ ($M_{\odot}/pc^3)$')
+            elif ndim==2:
+                pyplot.ylabel(r'$\log_{10} \Sigma$ ($M_{\odot}/pc^2)$')
+
+            if filename is not None:
+                pyplot.savefig(filename)
+                pyplot.close()
+            else:
+                pyplot.show()
+                pyplot.close()
+
+def density_weighted_mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
+
+    for oparam in observations:
+        if 'rhov' in oparam:
+
+            rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
+            mod_v2=density_weighted_mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
+
+            #mod_rlower,mod_rmid,mod_rupper,mod_v2_full=mean_squared_velocity(stars,param=param,ndim=ndim,nbin=nbin,bins=True,bintype=bintype,kernel=obskernel)
+
+            #Compare density profiles
+            mindx=(mod_v2 > 0.) * (rupper < 1.e10)
+            pyplot.loglog(rmid[mindx],mod_v2[mindx],'r',label='Model')
+            pyplot.loglog(rmid[mindx],mod_v2[mindx],'ro')
+
+            #mindx=(mod_v2_full > 0.)
+            #pyplot.loglog(mod_rmid[mindx],mod_v2_full[mindx],'r--',label='Model Full')
+            #pyplot.loglog(mod_rmid[mindx],mod_v2_full[mindx],'ro')
+
+            mindx=(v2 > 0.) * (rupper < 1.e10)
+
+            pyplot.loglog(rmid[mindx],v2[mindx],'k',label='Observations')
+            pyplot.loglog(rmid[mindx],v2[mindx],'ko')
+
+            pyplot.legend()
+            pyplot.xlabel(r'$\rm \log_{10} r \ (pc)')
+
+            pyplot.ylabel(r'$\rm \log_{10} \rho <v^2> \ (M_{\odot}/pc^3 \ km/s)$')
 
 
-    vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
-    area=np.pi*(rupper**2.-rlower**2.)
-
-    mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
-
-    mod_rlower,mod_rmid,mod_rupper,mod_rho_full=density(stars,param=param,ndim=ndim,nbin=nbin,kernel=rhokernel,bins=True,bintype=bintype,**kwargs)
-
-    #Compare density profiles
-    mindx=(mod_rho > 0.) * (rupper < 1.e10)
-    pyplot.loglog(rmid[mindx],mod_rho[mindx],'r',label='Model')
-    pyplot.loglog(rmid[mindx],mod_rho[mindx],'ro')
-
-    mindx=(mod_rho_full > 0.)
-    #pyplot.loglog(mod_rmid[mindx],mod_rho_full[mindx],'r--',label='Model Full')
-    #pyplot.loglog(mod_rmid[mindx],mod_rho_full[mindx],'ro')
-
-    mindx=(rho > 0.) * (rupper < 1.e10)
-
-    pyplot.loglog(rmid[mindx],rho[mindx],'k',label='Observations')
-    pyplot.loglog(rmid[mindx],rho[mindx],'ko')
-
-    pyplot.legend()
-    pyplot.xlabel('$\log_{10} r$ (pc)')
-
-    if ndim==3:
-        pyplot.ylabel(r'$\log_{10} \rho$ ($M_{\odot}/pc^3)$')
-    else:
-        pyplot.ylabel(r'$\log_{10} \Sigma$ ($M_{\odot}/pc^2)$')
-
-    if filename is not None:
-        pyplot.savefig(filename)
-        pyplot.close()
-    else:
-        pyplot.show()
-        pyplot.close()
+            if filename is not None:
+                pyplot.savefig(filename)
+                pyplot.close()
+            else:
+                pyplot.show()
+                pyplot.close()
 
 def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
 
     for oparam in observations:
-        rlower,rmid,rupper,obs,param,ndim,sigma, obskernel, rhov2 = observations[oparam]
-        if param=='v2' or param=='vlos2' or param=='vR2' or param=='vT2' or param=='vz2':
-            mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,rhov2=rhov2,**kwargs)
-            v2=obs
+        if ('v' in oparam) and ('rhov' not in oparam):
 
-    mod_rlower,mod_rmid,mod_rupper,mod_v2_full=mean_squared_velocity(stars,param=param,ndim=ndim,nbin=nbin,bins=True,bintype=bintype,kernel=obskernel,rhov2=rhov2)
+            rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
 
-    #Compare density profiles
-    mindx=(mod_v2 > 0.) * (rupper < 1.e10)
-    pyplot.loglog(rmid[mindx],mod_v2[mindx],'r',label='Model')
-    pyplot.loglog(rmid[mindx],mod_v2[mindx],'ro')
+            mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
 
-    mindx=(mod_v2_full > 0.)
-    #pyplot.loglog(mod_rmid[mindx],mod_v2_full[mindx],'r--',label='Model Full')
-    #pyplot.loglog(mod_rmid[mindx],mod_v2_full[mindx],'ro')
+            mod_rlower,mod_rmid,mod_rupper,mod_v2_full=mean_squared_velocity(stars,param=param,ndim=ndim,nbin=nbin,bins=True,bintype=bintype,kernel=obskernel)
 
-    mindx=(v2 > 0.) * (rupper < 1.e10)
+            #Compare density profiles
+            mindx=(mod_v2 > 0.) * (rupper < 1.e10)
+            pyplot.loglog(rmid[mindx],mod_v2[mindx],'r',label='Model')
+            pyplot.loglog(rmid[mindx],mod_v2[mindx],'ro')
 
-    pyplot.loglog(rmid[mindx],v2[mindx],'k',label='Observations')
-    pyplot.loglog(rmid[mindx],v2[mindx],'ko')
+            mindx=(mod_v2_full > 0.)
+            #pyplot.loglog(mod_rmid[mindx],mod_v2_full[mindx],'r--',label='Model Full')
+            #pyplot.loglog(mod_rmid[mindx],mod_v2_full[mindx],'ro')
 
-    pyplot.legend()
-    pyplot.xlabel('$\log_{10} r$ (pc)')
+            mindx=(v2 > 0.) * (rupper < 1.e10)
 
-    if rhov2:
-        pyplot.ylabel(r'$\log_{10} \rho <v^2>$ ($\rm ($M_{\odot}/pc^3 km/s$)')
-    else:
-        pyplot.ylabel(r'$\log_{10} <v^2>$ ($\rm km/s$)')
+            pyplot.loglog(rmid[mindx],v2[mindx],'k',label='Observations')
+            pyplot.loglog(rmid[mindx],v2[mindx],'ko')
 
-    if filename is not None:
-        pyplot.savefig(filename)
-        pyplot.close()
-    else:
-        pyplot.show()
-        pyplot.close()
+            pyplot.legend()
+            pyplot.xlabel(r'$\log_{10} r$ (pc)')
+
+            pyplot.ylabel(r'$ \log_{10} <v^2>$ ($\rm km/s$)')
+
+            if filename is not None:
+                pyplot.savefig(filename)
+                pyplot.close()
+            else:
+                pyplot.show()
+                pyplot.close()

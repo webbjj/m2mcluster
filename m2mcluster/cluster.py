@@ -42,7 +42,7 @@ class starcluster(object):
 		self.calc_step=calc_step
 		self.step=1.
 
-	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',rhov2=False,extend_outer=False):
+	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',extend_outer=False):
 
 		#'rho' or 'Sigma' for 3d and 2d density
 		#'v2','vlos2','vR2','vT2','vz2' for square velocities
@@ -61,7 +61,7 @@ class starcluster(object):
 		if extend_outer:
 			sigma=np.append(sigma,1.0e-10)
 
-		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel,rhov2]
+		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
 
 	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3):
 
@@ -188,6 +188,9 @@ class starcluster(object):
 	def v2_prof(self,filename=None):
 		mean_squared_velocity_profile(self.stars, self.observations,filename=filename)
 
+	def rhov2_prof(self,filename=None):
+		density_weighted_mean_squared_velocity_profile(self.stars, self.observations,filename=filename)
+
 	def writeout(self,outfile=None):
 
 		if outfile==None:
@@ -201,7 +204,7 @@ class starcluster(object):
 
 
 			for oparam in self.observations:
-				rlower,rmid,rupper,obs,param,ndim,sigma,kernel,rhov2=self.observations[oparam]
+				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
 				for r in rmid:
 					outfile.write('%f,' % r)
@@ -215,7 +218,7 @@ class starcluster(object):
 
 
 		for oparam in self.observations:
-			rlower,rmid,rupper,obs,param,ndim,sigma,kernel,rhov2=self.observations[oparam]
+			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
 
 			if param=='rho' or param=='Sigma':
@@ -226,9 +229,12 @@ class starcluster(object):
 				for rho in mod_rho:
 					outfile.write('%f,' % rho)
 
-			if param=='v2' or param=='vlos2' or param=='vR2' or param=='vT2' or param=='vz2':
+			elif 'v' in param:
 
-				mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel, rhov2=rhov2)
+				if 'rhov' in param:
+					mod_v2=density_weighted_mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
+				else:
+					mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
 
 				for r in rmid:
 					outfile.write('%f,' % r)

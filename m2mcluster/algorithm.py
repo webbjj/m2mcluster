@@ -17,23 +17,24 @@ def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=
     #JO - alpha >= epsilon?
     #JO - alpha=1/dt is equivalent to no smoothing and alpha cannot be set to a larger value. Which dt? integartion time or eval time?
 
-    if (len(observations)==1 and ('rho' in observations or 'Sigma' in observations) and method != 'Bovy') or method=='Seyer':
+    if method=='Seyer':
 
         stars,chi_squared,delta_j_tilde=made_to_measure_seyer(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs,)
         return stars,chi_squared,delta_j_tilde
 
     else:
+
         stars,chi_squared,delta_j_tilde=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs,)
         return stars,chi_squared,delta_j_tilde
 
 
 def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
 
-    #Get the observed diensity profile
+    #Get the observed density profile
     if 'rho' in observations:
-        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel, rhov2=observations['rho']
+        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel=observations['rho']
     else:
-        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel, rhov2=observations['Sigma']
+        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel=observations['Sigma']
 
     #Get the model cluster's current density using the same radial bins as the observed density profile
     mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
@@ -68,7 +69,7 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
     #Find dwdt for each star
     for i in range(0,len(stars)):
 
-        K_j=get_kernel(r[i],rlower,rmid,rupper,rhokernel,**kwargs)
+        K_j=get_kernel(r[i],rlower,rmid,rupper,rhokernel,ndim,**kwargs)
         #Note the sqrt on Y_j due to get_dchi2 taking sigma in bovy formalism
         dchi2=get_dchi2(delta_j_tilde,K_j,np.sqrt(Y_j))
 
@@ -101,11 +102,10 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
     ndims=[]
     sigmas=[]
     kernels=[]
-    rhov2s=[]
 
     for oparam in observations:
 
-        rlower,rmid,rupper,ob,param,ndim,sigma,obkernel,orhov2=observations[oparam]
+        rlower,rmid,rupper,ob,param,ndim,sigma,obkernel=observations[oparam]
         rlowers.append(rlower)
         rmids.append(rmid)
         ruppers.append(rupper)
@@ -114,7 +114,6 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         ndims.append(ndim)
         sigmas.append(sigma)
         kernels.append(obkernel)
-        rhov2s.append(orhov2)
 
     mods=[]
 
@@ -122,7 +121,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         if params[i]=='rho' or params[i]=='Sigma':
             mod=density(stars,rlowers[i],rmids[i],ruppers[i],params[i],ndims[i],kernel=kernels[i],**kwargs)
         else:
-            mod=mean_squared_velocity(stars,rlowers[i],rmids[i],ruppers[i],params[i],ndims[i],kernel=kernels[i],rhov2=rhov2s[i],**kwargs)
+            mod=mean_squared_velocity(stars,rlowers[i],rmids[i],ruppers[i],params[i],ndims[i],kernel=kernels[i],**kwargs)
         mods.append(mod)
 
     #Entropy:Bovy Equation 21
@@ -171,7 +170,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         K_j=[]
 
         for j in range(0,len(obs)):
-            K_j.append(get_kernel(rs[j][i],rlowers[j],rmids[j],ruppers[j],kernel=kernels[j],**kwargs))
+            K_j.append(get_kernel(rs[j][i],rlowers[j],rmids[j],ruppers[j],kernel=kernels[j],ndim=ndims[j],**kwargs))
 
         dchi2=[]
 
