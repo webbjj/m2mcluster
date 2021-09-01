@@ -10,6 +10,7 @@ from amuse.units import nbody_system,units
 from amuse.community.hermite.interface import Hermite
 from amuse.community.bhtree.interface import BHTree
 from amuse.community.gadget2.interface import Gadget2
+from amuse.datamodel import Particles
 
 import logging
 
@@ -63,10 +64,26 @@ class starcluster(object):
 
 		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
 
-	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3):
+	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename = None):
 
+		if filename is not None:
+			m,x,y,z,vx,vy,vz=np.loadtxt(filename,unpack=True)
+			self.stars=Particles(len(x))
+			self.stars.mass = m | units.MSun
+			self.stars.x=x | units.parsec
+			self.stars.y=y | units.parsec
+			self.stars.z=z | units.parsec
+			self.stars.vx=vx | units.kms
+			self.stars.vy=vy | units.kms
+			self.stars.vz=vz | units.kms
 
-		self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha)
+			Mcluster=self.stars.total_mass()
+			Rcluster=self.stars.virial_radius()
+			self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
+
+		else:
+
+			self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha)
 
 		self.softening2=softening**2.
 
