@@ -59,7 +59,7 @@ class starcluster(object):
 
 		if sigma is None:
 			sigma=np.ones(len(x))
-		if extend_outer:
+		elif extend_outer:
 			sigma=np.append(sigma,1.0e-10)
 
 		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
@@ -234,6 +234,8 @@ class starcluster(object):
 		outfile.write('%i,' % self.niteration)
 
 
+		c2=np.array([])
+
 		for oparam in self.observations:
 			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
@@ -245,6 +247,8 @@ class starcluster(object):
 
 				for rho in mod_rho:
 					outfile.write('%f,' % rho)
+
+				c2=np.append(c2,chi2(obs,mod_rho))
 
 			elif 'v' in param:
 
@@ -259,10 +263,19 @@ class starcluster(object):
 				for v2 in mod_v2:
 					outfile.write('%f,' % v2)
 
+				c2=np.append(c2,chi2(obs,mod_v2))
+
+
 		if self.niteration==0:
 			self.criteria=0.
 
-		outfile.write('%f\n' % self.criteria)
+		outfile.write('%f' % self.criteria)
+
+		for c in c2:
+			outfile.write('%f' % c2)
+
+		outfile.write('/n')
+
 
 	def snapout(self):
 		write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
