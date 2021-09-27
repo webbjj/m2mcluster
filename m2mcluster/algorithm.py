@@ -47,7 +47,7 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
     Y_j=rho
 
     #D. Syer & S. Tremaine 1996 - Equation 15
-    if delta_j_tilde is None:
+    if delta_j_tilde is None or alpha==0.:
         delta_j_tilde=delta_j
     else:
         delta_j_tilde+=step*alpha*(delta_j-delta_j_tilde)
@@ -120,6 +120,8 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
     for i in range(0,len(obs)):
         if params[i]=='rho' or params[i]=='Sigma':
             mod=density(stars,rlowers[i],rmids[i],ruppers[i],params[i],ndims[i],kernel=kernels[i],**kwargs)
+        elif ('rho' in params[i] or 'Sigma' in params[i]) and ('v' in params[i]):
+            mod=density_weighted_mean_squared_velocity(stars,rlowers[i],rmids[i],ruppers[i],params[i],ndims[i],kernel=kernels[i],**kwargs)
         else:
             mod=mean_squared_velocity(stars,rlowers[i],rmids[i],ruppers[i],params[i],ndims[i],kernel=kernels[i],**kwargs)
         mods.append(mod)
@@ -152,7 +154,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
 
     #Bovy Equation 22/23
-    if delta_j_tilde is None:
+    if delta_j_tilde is None or alpha==0.:
         delta_j_tilde=[]
         for i in range(0,len(delta_j)):
             delta_j_tilde.append(delta_j[i])
@@ -182,6 +184,8 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
         for j in range(0,len(dchi2)):
             dchisum+=np.sum(dchi2[j])/2.
+
+        if debug and i==0: print(i,delta_j_tilde,K_j,sigmas,v2s[j][i])
 
         dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-dchisum)
 

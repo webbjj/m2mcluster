@@ -1,8 +1,5 @@
 from __future__ import print_function
 
-#import matplotlib
-#matplotlib.use('Agg')
-
 import numpy as np
 from amuse.lab import *
 from matplotlib import pyplot

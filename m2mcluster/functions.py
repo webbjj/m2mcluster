@@ -276,7 +276,7 @@ def get_v2(particles,param,ndim):
             elif ndim==1:
                 v=particles.vx.value_in(units.kms)
 
-        return v*v
+    return v*v
 
 def nbinmaker(x, nbin=10, nsum=False):
     """Split an array into bins with equal numbers of elements

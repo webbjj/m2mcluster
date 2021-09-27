@@ -272,7 +272,7 @@ class starcluster(object):
 		outfile.write('%f' % self.criteria)
 
 		for c in c2:
-			outfile.write('%f' % c2)
+			outfile.write('%f' % c)
 
 		outfile.write('/n')
 
