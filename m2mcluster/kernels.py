@@ -5,15 +5,23 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
     vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
     area=(4.)*np.pi*(rupper**2.-rlower**2.)
 
+    norm=kwargs.get('norm',True)
+
 
     if kernel == 'identifier':
         rindx=((r >= rlower) * (r <= rupper))
 
         #D. Syer & S. Tremaine 1996 - Section 2.2, set K_j to 1/vol or 0, such that K_j/Z_j = 1 or 0
         if ndim==3:
-            K_j=rindx*(1./vol) 
+            if norm:
+                K_j=rindx*(1./vol)
+            else:
+                K_j=rindx*1.
         elif ndim==2:
-            K_j=rindx*(1./area) 
+            if norm:
+                K_j=rindx*(1./area) 
+            else:
+                K_j=rindx*1.
 
     elif kernel == 'gaussian':
 
@@ -29,10 +37,12 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
         else:
             K_j=np.zeros(len(rlower))
 
-        if ndim==3:
+        if ndim==3 and norm:
             K_j=K_j*(1./vol)
-        elif ndim==2:
+        elif ndim==2 and norm:
             K_j=K_j*(1./area)
+        else:
+            K_j*=1.
 
 
     return K_j

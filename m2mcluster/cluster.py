@@ -187,9 +187,9 @@ class starcluster(object):
 
 		return self.stars
 
-	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,method='Seyer', **kwargs):
+	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,mscale=1.,zeta=None,xi=None,method='Seyer', **kwargs):
 			
-		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
 
 		self.niteration+=1
 
@@ -201,6 +201,9 @@ class starcluster(object):
 
 	def rho_prof(self,filename=None):
 	    density_profile(self.stars, self.observations,filename=filename)
+
+	def v_prof(self,filename=None):
+		mean_velocity_profile(self.stars, self.observations,filename=filename)
 
 	def v2_prof(self,filename=None):
 		mean_squared_velocity_profile(self.stars, self.observations,filename=filename)
@@ -254,8 +257,10 @@ class starcluster(object):
 
 				if 'rhov' in param:
 					mod_v2=density_weighted_mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
-				else:
+				elif 'v' in param and '2' in param:
 					mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
+				elif 'v' in param and '2' not in param:
+					mod_v2=mean_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
 
 				for r in rmid:
 					outfile.write('%f,' % r)

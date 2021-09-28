@@ -14,7 +14,7 @@ def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
 
 def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
 
-    if kernel=='identifier':
+    if kernel=='standard':
 
         return standard_density(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype)
 
@@ -82,6 +82,117 @@ def standard_density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim
     else:
         return rho
 
+def mean_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
+
+    if kernel != 'standard':
+
+        if ndim==3:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+        else:
+            r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+        v=get_v(particles,param,ndim)
+
+
+        if rlower is None:
+
+            if bintype=='num':
+                rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+            elif bintype =='fix':
+                rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        else:
+            nbin=len(rlower)
+
+        vprof=np.zeros(nbin)
+
+        #Normalizing kernel
+        vnorm=np.zeros(nbin)
+        rlowern=kwargs.get('rlowern',rlower)
+        rmidn=kwargs.get('rmidn',rmid)
+        ruppern=kwargs.get('ruppern',rupper)
+        kerneln=kwargs.get('kerneln',kernel)
+        ndimn=kwargs.get('ndimn',ndim)
+
+        for i in range(0,len(r)):
+            K_j=get_kernel(r[i],rlower,rmid,rupper,kernel,ndim,**kwargs)
+            vprof+=particles[i].mass.value_in(units.MSun)*v[i]*K_j
+
+
+            K_jn=get_kernel(r[i],rlowern,rmidn,ruppern,kerneln,ndimn,**kwargs)
+            vnorm+=particles[i].mass.value_in(units.MSun)*K_jn
+
+        divindx=vnorm>0
+
+        vprof[divindx]/=vnorm[divindx]
+
+        if bins:
+            return rlower,rmid,rupper,vprof
+        else:
+            return vprof
+
+    elif kernel=='standard':
+
+        return standard_mean_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype)
+
+
+def standard_mean_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False,bintype='fix'):
+
+    if ndim==3:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+    else:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+    v=get_v(particles,param,ndim)
+
+    if rlower is None:
+
+        if bintype=='num':
+            rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+        elif bintype =='fix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+    else:
+        nbin=len(rlower)
+
+    vprof=np.array([])
+
+    for i in range(0,len(rmid)):
+                    
+        indx=(r > rlower[i]) * (r <= rupper[i])
+        
+        if np.sum(indx)>0:
+            vprof=np.append(vprof,np.mean(v[indx]))
+        else:
+            vprof=np.append(vprof,0.0)
+
+    if bins:
+        return rlower,rmid,rupper,vprof
+    else:
+        return vprof
+
+
+def weighted_mean_relative_velocity(particles=None,rlower=None,rmid=None,rupper=None,vprof=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
+
+    if vprof is None:
+        if bins:
+            vprof=mean_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,kernel=kernel,bins=bins, bintype=bintype,**kwargs)
+        else:
+            rlower,rmid,rupper,vprof=mean_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,kernel=kernel,bins=bins, bintype=bintype,**kwargs)
+
+    if ndim==3:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.+(particles.z.value_in(units.parsec))**2.)
+    else:
+        r=np.sqrt((particles.x.value_in(units.parsec))**2.+(particles.y.value_in(units.parsec))**2.)
+
+    v=get_v(particles,param,ndim)
+
+    dvj=np.zeros(len(vprof))
+
+    for i in range(0,len(v)):
+        K_j=get_kernel(r[i],rlower,rmid,rupper,kernel,ndim,**kwargs)
+        dvj+=(v[i]-vprof)*particles[i].mass.value_in(units.MSun)*K_j
+
+    return dvj
+
 def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
 
     if kernel != 'standard':
@@ -132,7 +243,7 @@ def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None
 
     elif kernel=='standard':
 
-        return standard_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype,rhov2=rhov2)
+        return standard_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype)
 
 
 def standard_mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,bins=False,bintype='fix'):
@@ -277,6 +388,42 @@ def get_v2(particles,param,ndim):
                 v=particles.vx.value_in(units.kms)
 
     return v*v
+
+def get_v(particles,param,ndim):
+
+    if param is None:
+        if ndim==3:
+            v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
+        elif ndim==2:
+            v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.)
+        elif ndim==1:
+            v=particles.vx.value_in(units.kms)
+    else:
+
+        if 'vlos' in param or 'vz' in param:
+            v=particles.vz.value_in(units.kms)
+
+        elif 'vR' in param or 'vT' in param:
+
+            R,theta,z=coords.rect_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+
+            vR,vT,vz=coords.rect_to_cyl_vec(particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+
+            if 'vR' in param:
+                v=vR
+            elif param=='vT':
+                v=vT
+
+        elif 'v' in param:
+            if ndim==3:
+                v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
+            elif ndim==2:
+                v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.)
+            elif ndim==1:
+                v=particles.vx.value_in(units.kms)
+
+    return v
+
 
 def nbinmaker(x, nbin=10, nsum=False):
     """Split an array into bins with equal numbers of elements
