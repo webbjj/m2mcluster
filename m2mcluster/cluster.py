@@ -38,7 +38,7 @@ class starcluster(object):
 		else:
 			self.outfile=outfile
 
-		self.delta_j_tilde=None
+		self.delta_j_tilde=[]
 
 		self.calc_step=calc_step
 		self.step=1.
@@ -63,6 +63,8 @@ class starcluster(object):
 			sigma=np.append(sigma,1.0e-10)
 
 		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
+
+		self.delta_j_tilde.append(np.zeros(len(x)))
 
 	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename = None):
 
@@ -279,7 +281,7 @@ class starcluster(object):
 		for c in c2:
 			outfile.write('%f' % c)
 
-		outfile.write('/n')
+		outfile.write('\n')
 
 
 	def snapout(self):

@@ -50,7 +50,7 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
     Y_j=rho
 
     #D. Syer & S. Tremaine 1996 - Equation 15
-    if delta_j_tilde is None or alpha==0.:
+    if alpha==0.:
         delta_j_tilde=delta_j
     else:
         delta_j_tilde+=step*alpha*(delta_j-delta_j_tilde)
@@ -157,10 +157,9 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
 
     #Bovy Equation 22/23
-    if delta_j_tilde is None or alpha==0.:
-        delta_j_tilde=[]
-        for i in range(0,len(delta_j)):
-            delta_j_tilde.append(delta_j[i])
+    if alpha==0.:
+        for i in range(0,len(delta_j_tilde)):
+            delta_j_tilde[i]=delta_j[i]
     else:
         for i in range(0,len(delta_j_tilde)):
             delta_j_tilde[i]+=step*alpha*(delta_j[i]-delta_j_tilde[i])
@@ -278,9 +277,8 @@ def made_to_measure_hunt(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
     #Bovy Equation 22/23
     if delta_j_tilde is None or alpha==0.:
-        delta_j_tilde=[]
-        for i in range(0,len(delta_j)):
-            delta_j_tilde.append(delta_j[i])
+        for i in range(0,len(delta_j_tilde)):
+            delta_j_tilde[i]=delta_j[i]
     else:
         for i in range(0,len(delta_j_tilde)):
             delta_j_tilde[i]+=step*alpha*(delta_j[i]-delta_j_tilde[i])
