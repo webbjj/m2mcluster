@@ -193,7 +193,7 @@ def weighted_mean_relative_velocity(particles=None,rlower=None,rmid=None,rupper=
 
     return dvj
 
-def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
+def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',rlower_rho=None,rmid_rho=None,rupper_rho=None,kernel_rho=None,ndim_rho=None,norm=False,**kwargs):
 
     if kernel != 'standard':
 
@@ -214,35 +214,44 @@ def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None
         else:
             nbin=len(rlower)
 
-        v2prof=np.zeros(nbin)
+        if rlower_rho is None:
+            rlower_rho=rlower
+            rmid_rho=rmid
+            rupper_rho=rupper
+            kernel_rho=kernel
+            ndim_rho=ndim
 
-        #Normalizing kernel
+        rhov2prof=density_weighted_mean_squared_velocity(particles,rlower=rlower_rho,rmid=rmid_rho,rupper=rupper_rho,param='rho%s' % param,ndim=ndim_rho,nbin=len(rmid_rho),kernel=kernel_rho,bins=False, bintype=bintype, **kwargs) 
+
+        #Normalizing denominator
+
         v2norm=np.zeros(nbin)
-        rlowern=kwargs.get('rlowern',rlower)
-        rmidn=kwargs.get('rmidn',rmid)
-        ruppern=kwargs.get('ruppern',rupper)
-        kerneln=kwargs.get('kerneln',kernel)
-        ndimn=kwargs.get('ndimn',ndim)
 
         for i in range(0,len(r)):
             K_j=get_kernel(r[i],rlower,rmid,rupper,kernel,ndim,**kwargs)
-            v2prof+=particles[i].mass.value_in(units.MSun)*v2[i]*K_j
+            v2norm+=particles[i].mass.value_in(units.MSun)*K_j
+        divindx=(v2norm>0)
 
+        v2prof=np.zeros(nbin)
 
-            K_jn=get_kernel(r[i],rlowern,rmidn,ruppern,kerneln,ndimn,**kwargs)
-            v2norm+=particles[i].mass.value_in(units.MSun)*K_jn
-
-        divindx=v2norm>0
-
-        v2prof[divindx]/=v2norm[divindx]
+        if np.sum(divindx) == 0:
+            print('DIVIDE BY ZERO ERROR',divindx,v2norm)
+            return -1
+        else:
+            v2prof[divindx]=np.asarray(rhov2prof)[divindx]/v2norm[divindx]
 
         if bins:
-            return rlower,rmid,rupper,v2prof
+            if norm:
+                return rlower,rmid,rupper,v2prof,v2norm
+            else:
+                return rlower,rmid,rupper,v2prof
         else:
-            return v2prof
+            if norm:
+                return v2prof,v2norm
+            else:
+                return v2prof
 
     elif kernel=='standard':
-
         return standard_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param=param,ndim=ndim,nbin=nbin,bins=bins, bintype=bintype)
 
 
@@ -376,7 +385,7 @@ def get_v2(particles,param,ndim):
 
             if 'vR' in param:
                 v=vR
-            elif param=='vT':
+            elif 'vT' in param:
                 v=vT
 
         elif 'v' in param:
