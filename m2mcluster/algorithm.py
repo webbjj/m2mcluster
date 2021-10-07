@@ -118,7 +118,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         sigmas.append(sigma)
         kernels.append(obkernel)
 
-        if param=='rho' or params=='Sigma':
+        if param=='rho' or param=='Sigma':
             rlower_rho=rlower
             rmid_rho=rmid
             rupper_rho=rupper
@@ -191,7 +191,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
                 K_j_rho=K_j[-1]
                 dv.append([None]*len(mods[j]))
 
-            elif 'v' in params[j] and '2' in params[j] and 'rho' not in params[j]:
+            elif 'v' in params[j] and '2' in params[j] and 'rho' not in params[j] and 'Sigma' not in params[j] :
                 dv.append(v2s[j][i]-mods[j])
             else:
                 dv.append([None]*len(mods[j]))
@@ -217,7 +217,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         for j in range(0,len(dchi2)):
             dchisum+=np.sum(dchi2[j])/2.
 
-        if debug and i==0: print(i,rs[:][i],delta_j_tilde,K_j,sigmas,v2s[:][i])
+        if debug and i==0: print(i,rs[0][i],delta_j_tilde,K_j,sigmas,v2s[1][i])
 
         dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-dchisum)
 
@@ -261,7 +261,7 @@ def made_to_measure_hunt(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         sigmas.append(sigma)
         kernels.append(obkernel)
 
-        if oparam=='rho' or oparam=='sigma':
+        if oparam=='rho' or oparam=='Sigma':
             obs_dens=ob
 
 
