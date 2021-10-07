@@ -257,7 +257,7 @@ class starcluster(object):
 
 			elif 'v' in param:
 
-				if 'rhov' in param or 'sigmav' in param:
+				if 'rhov' in param or 'Sigmav' in param:
 					mod_v2=density_weighted_mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
 				elif 'v' in param and '2' in param:
 					mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
