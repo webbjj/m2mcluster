@@ -70,7 +70,7 @@ def density_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwa
 def density_weighted_mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
 
     for oparam in observations:
-        if ('rhov' in oparam) and ('2' in oparam):
+        if (('rhov' in oparam) and ('2' in oparam)) or (('sigmav' in oparam) and ('2' in oparam)):
 
             rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
             mod_v2=density_weighted_mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
@@ -105,7 +105,7 @@ def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filen
     nv=0
 
     for oparam in observations:
-        if ('v' in oparam) and ('2' in oparam) and ('rhov' not in oparam):
+        if ('v' in oparam) and ('2' in oparam) and ('rhov' not in oparam) and ('sigmav' not in oparam):
 
             print(oparam)
             rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
@@ -150,7 +150,7 @@ def mean_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None
     nv=0
 
     for oparam in observations:
-        if ('v' in oparam) and ('2' not in oparam) and ('rhov' not in oparam):
+        if ('v' in oparam) and ('2' not in oparam) and ('rhov' not in oparam) and ('sigmav' not in oparam):
 
             rlower,rmid,rupper,v,param,ndim,sigma, obskernel = observations[oparam]
 
