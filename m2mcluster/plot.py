@@ -107,7 +107,6 @@ def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filen
     for oparam in observations:
         if ('v' in oparam) and ('2' in oparam) and ('rhov' not in oparam) and ('sigmav' not in oparam):
 
-            print(oparam)
             rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
 
             mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)

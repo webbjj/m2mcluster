@@ -217,7 +217,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         for j in range(0,len(dchi2)):
             dchisum+=np.sum(dchi2[j])/2.
 
-        if debug and i==0: print(i,delta_j_tilde,K_j,sigmas,v2s[j][i])
+        if debug and i==0: print(i,rs[:][i],delta_j_tilde,K_j,sigmas,v2s[:][i])
 
         dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-dchisum)
 
