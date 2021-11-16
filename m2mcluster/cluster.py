@@ -19,6 +19,8 @@ from .algorithm import *
 from .functions import *
 from .setup import setup_star_cluster
 
+from galpy.util import coords
+
 class starcluster(object):
 
 	def __init__(self, kernel='identifier', calc_step=False,number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
@@ -99,7 +101,13 @@ class starcluster(object):
 
 		return self.stars,self.converter
 
-	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None):
+	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None, nbin=50, bintype='num'):
+
+		if self.debug:
+			print('REINITIALIZE:')
+			print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
+			print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
+			print('N = ',len(self.stars))
 
 		#remove stars with masses below mmin
 		if mmin is not None:
@@ -107,40 +115,132 @@ class starcluster(object):
 			self.stars.remove_particles(self.stars[indx])
 			self.w0=self.w0[np.invert(indx)]
 
+			if self.debug:
+				print('Remove %i low mass stars' % np.sum(indx))
+				print('Mcluster = ',self.stars.total_mass().value_in(units.MSun),np.sum(self.stars.mass.value_in(units.MSun)))
+				print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
+				print('N = ',len(self.stars))
+
 		#Scale mass of cluster so total mass equals mtot
 		if mtot is not None:
 			mscale=mtot/self.stars.total_mass()
 			self.stars.mass*=mscale
 
+			if self.debug:
+				print('Scale cluster by %f' % mscale)
+				print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
+				print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
+				print('N = ',len(self.stars))
+
 		#For stars with masses above mmax, split the mass with a new star with opposite position and velocity in the cluster
 		if mmax is not None:
-			indx=self.stars.mass > mmax
+			mindx=self.stars.mass > mmax
 
-			new_stars=self.stars[indx].copy_to_new_particles()
-			new_stars.x*=-1.
-			new_stars.y*=-1.
-			new_stars.z*=-1.
-			new_stars.vx*=-1.
-			new_stars.vy*=-1.
-			new_stars.vz*=-1.
+			if np.sum(mindx) > 0:
 
-			new_w0=self.w0[indx]
+				if self.debug:
+					print('Resample %i high-mass with total mass %f' % (np.sum(mindx),np.sum(self.stars.mass[mindx].value_in(units.MSun))))
 
-			self.stars.add_particles(new_stars)
-			self.w0=np.append(self.w0,new_w0)
+				mnew,xnew,ynew,znew,vxnew,vynew,vznew=self.resample(mindx,nbin=nbin,bintype=bintype)
 
+				new_stars=Particles(len(mnew))
+				new_stars.mass=mnew | units.MSun
+				new_stars.x=xnew | units.parsec
+				new_stars.y=ynew | units.parsec
+				new_stars.z=znew | units.parsec
+				new_stars.vx=vxnew | units.kms
+				new_stars.vy=vynew | units.kms
+				new_stars.vz=vznew | units.kms
+				new_w0=mnew
 
-			indx=self.stars.mass > mmax
-			self.stars.mass[indx]/=2.
+				self.stars.remove_particles(self.stars[mindx])
+				self.w0=self.w0[np.invert(mindx)]
+
+				self.stars.add_particles(new_stars)
+				self.w0=np.append(self.w0,new_w0)
+
+				if self.debug:
+					print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
+					print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
+					print('N = ',len(self.stars))
 
 		self.stars.move_to_center()
 		Mcluster=self.stars.total_mass()
 		Rcluster=self.stars.virial_radius()
+
+		if self.debug:
+			print('DONE:')
+			print('Mcluster = ',Mcluster.value_in(units.MSun))
+			print('Rcluster = ',Rcluster.value_in(units.parsec))
+			print('N = ',len(self.stars))
+
 		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
 
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)
+
+	def resample(self,mindx,nbin=50,bintype='num'):
+
+		w0bar=np.mean(self.w0)
+		r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
+
+		mnew=np.array([])
+		xnew=np.array([])
+		ynew=np.array([])
+		znew=np.array([])
+		vxnew=np.array([])
+		vynew=np.array([])
+		vznew=np.array([])
+
+		if bintype=='num':
+		    rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+		elif bintype =='fix':
+		    rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+
+		for i in range(0,len(rmid)):
+			rindx=(r>=rlower[i])*(r<rupper[i])
+
+			if np.sum(rindx*mindx)>0:
+
+				mtot=np.sum(self.stars.mass[rindx*mindx].value_in(units.MSun))
+				ntot=int(np.ceil(mtot/w0bar))
+
+				if self.debug:
+					print('RESAMPLE: ',rmid[i],np.sum(rindx*mindx),ntot,mtot)
+
+				x,y,z=self.stars.x[rindx].value_in(units.parsec),self.stars.y[rindx].value_in(units.parsec),self.stars.z[rindx].value_in(units.parsec)
+				vx,vy,vz=self.stars.vx[rindx].value_in(units.kms),self.stars.vy[rindx].value_in(units.kms),self.stars.vz[rindx].value_in(units.kms)
+
+				vR,vT,vz=coords.rect_to_cyl_vec(vx,vy,vz,x,y,z)
+
+				r3d=np.random.uniform(rlower[i],rupper[i],ntot)
+				phin=2.0*np.pi*np.random.rand(ntot)
+				theta=np.arccos(1.0-2.0*np.random.rand(ntot))
+				Rn=r3d*np.cos(theta)
+				zn=r3d*np.sin(theta)
+
+				vRn=np.random.normal(0.,np.std(vR),ntot)
+				vTn=np.random.normal(0.,np.std(vT),ntot)
+				vzn=np.random.normal(0.,np.std(vz),ntot)
+
+				xn,yn,zn=coords.cyl_to_rect(Rn,phin,zn)
+				vxn,vyn,vzn=coords.cyl_to_rect_vec(vRn,vTn,vzn,phin)
+
+				mnew=np.append(mnew,np.ones(ntot)*w0bar)
+				xnew=np.append(xnew,xn)
+				ynew=np.append(ynew,yn)
+				znew=np.append(znew,zn)
+
+				vxnew=np.append(vxnew,vxn)
+				vynew=np.append(vynew,vyn)
+				vznew=np.append(vznew,vzn)
+
+		return mnew,xnew,ynew,znew,vxnew,vynew,vznew
+
+
+
+		pass
 
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
 		if gravity_code=='BHTree':
