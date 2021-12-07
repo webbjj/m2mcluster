@@ -334,7 +334,15 @@ class starcluster(object):
 				for o in obs:
 					outfile.write('%f,' % o)
 
-			outfile.write('%f\n' % 0.0)
+			outfile.write('%f,' % 0.0)
+
+			for oparam in self.observations:
+				if oparam==self.observations[-1]:
+					outfile.write('%f' % 0.0)
+				else:
+					outfile.write('%f,' % 0.0)
+
+			outfile.write('\n')
 
 		outfile.write('%i,' % self.niteration)
 
@@ -376,10 +384,14 @@ class starcluster(object):
 		if self.niteration==0:
 			self.criteria=0.
 
-		outfile.write('%f' % self.criteria)
+		outfile.write('%f,' % self.criteria)
 
 		for c in c2:
-			outfile.write('%f' % c)
+
+			if c==c2[-1]:
+				outfile.write('%f' % c)
+			else:
+				outfile.write('%f,' % c)
 
 		outfile.write('\n')
 
