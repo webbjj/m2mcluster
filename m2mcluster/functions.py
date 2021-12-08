@@ -565,6 +565,6 @@ def binmaker(x, nbin=10, nsum=False, steptype="linear"):
         return x_lower, x_mid, x_upper, x_hist
 
 def chi2(obs,mod):
-    return np.sum((mod-obs)2./obs)
+    return np.sum(((mod-obs)**2.)/obs)
 
 
