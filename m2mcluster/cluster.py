@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import numpy
 from amuse.lab import *
-from matplotlib import pyplot
+#from matplotlib import pyplot
 from amuse.units import nbody_system,units
 from amuse.community.hermite.interface import Hermite
 from amuse.community.bhtree.interface import BHTree
@@ -19,7 +19,10 @@ from .algorithm import *
 from .functions import *
 from .setup import setup_star_cluster
 
-from galpy.util import coords
+try:
+    from galpy.util import coords
+except:
+    import galpy.util.bovy_coords as coords
 
 class starcluster(object):
 
@@ -336,8 +339,8 @@ class starcluster(object):
 
 			outfile.write('%f,' % 0.0)
 
-			for oparam in self.observations:
-				if oparam==self.observations[-1]:
+			for i in range(0,len(self.observations)):
+				if i==(len(self.observations)-1):
 					outfile.write('%f' % 0.0)
 				else:
 					outfile.write('%f,' % 0.0)

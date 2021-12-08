@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import numpy as np
 from amuse.lab import *
-from matplotlib import pyplot
 from amuse.units import nbody_system,units
 from amuse.datamodel import Particles
 
