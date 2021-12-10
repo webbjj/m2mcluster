@@ -8,7 +8,7 @@ import galpy.util.bovy_coords as coords
 
 from .kernels import *
 
-from clustertools import cart_to_sphere,sphere_to_cart
+from clustertools import cart_to_sphere,cart_to_cyl
 
 def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
     return np.sqrt(Rcluster**3/(G*Mcluster))
@@ -390,6 +390,17 @@ def get_v2(particles,param,ndim):
             elif 'vt' in param:
                 v=vt
 
+        elif 'vR' in param or 'vT' in param or 'vz' in param:
+
+            R, theta, z, vR, vT, vz=cart_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+
+            if 'vR' in param:
+                v=vR
+            elif param=='vT':
+                v=vT
+            elif 'vz' in param:
+                v=vz
+
         elif 'v' in param:
             if ndim==3:
                 v=np.sqrt((particles.vx.value_in(units.kms))**2.+(particles.vy.value_in(units.kms))**2.+(particles.vz.value_in(units.kms))**2.)
@@ -425,6 +436,17 @@ def get_v(particles,param,ndim):
                 v=vp
             elif 'vt' in param:
                 v=vt
+
+        elif 'vR' in param or 'vT' in param or 'vz' in param:
+
+            R, theta, z, vR, vT, vz=cart_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+
+            if 'vR' in param:
+                v=vR
+            elif param=='vT':
+                v=vT
+            elif 'vz' in param:
+                v=vz
 
         elif 'v' in param:
             if ndim==3:
