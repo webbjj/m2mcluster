@@ -12,6 +12,9 @@ from amuse.community.bhtree.interface import BHTree
 from amuse.community.gadget2.interface import Gadget2
 from amuse.datamodel import Particles
 
+from clustertools import cart_to_sphere,sphere_to_cart
+
+
 import logging
 
 from .plot import *
@@ -51,7 +54,7 @@ class starcluster(object):
 	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',extend_outer=False):
 
 		#'rho' or 'Sigma' for 3d and 2d density
-		#'v2','vlos2','vR2','vT2','vz2' for square velocities
+		#'v2','vlos2','vr2','vp2','vt2' for square velocities
 
 
 		#Add outer bin that extends to 1e10 and has a value near 0
@@ -215,20 +218,17 @@ class starcluster(object):
 				x,y,z=self.stars.x[rindx].value_in(units.parsec),self.stars.y[rindx].value_in(units.parsec),self.stars.z[rindx].value_in(units.parsec)
 				vx,vy,vz=self.stars.vx[rindx].value_in(units.kms),self.stars.vy[rindx].value_in(units.kms),self.stars.vz[rindx].value_in(units.kms)
 
-				vR,vT,vz=coords.rect_to_cyl_vec(vx,vy,vz,x,y,z)
+				rad,phi,theta,vr,vp,vt=cart_to_sphere(x,y,z,vx,vy,vz)
 
-				r3d=np.random.uniform(rlower[i],rupper[i],ntot)
+				rn=np.random.uniform(rlower[i],rupper[i],ntot)
 				phin=2.0*np.pi*np.random.rand(ntot)
-				theta=np.arccos(1.0-2.0*np.random.rand(ntot))
-				Rn=r3d*np.cos(theta)
-				zn=r3d*np.sin(theta)
+				thetan=np.arccos(1.0-2.0*np.random.rand(ntot))
+			
+				vrn=np.random.normal(0.,np.std(vr),ntot)
+				vpn=np.random.normal(0.,np.std(vp),ntot)
+				vTn=np.random.normal(0.,np.std(vt),ntot)
 
-				vRn=np.random.normal(0.,np.std(vR),ntot)
-				vTn=np.random.normal(0.,np.std(vT),ntot)
-				vzn=np.random.normal(0.,np.std(vz),ntot)
-
-				xn,yn,zn=coords.cyl_to_rect(Rn,phin,zn)
-				vxn,vyn,vzn=coords.cyl_to_rect_vec(vRn,vTn,vzn,phin)
+				xn,yn,zn,vxn,vyn,vzn = sphere_to_cart(rn,phin,thetan,vrn,vpn,vtn)
 
 				mnew=np.append(mnew,np.ones(ntot)*w0bar)
 				xnew=np.append(xnew,xn)

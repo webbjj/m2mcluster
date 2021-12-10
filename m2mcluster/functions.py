@@ -8,6 +8,7 @@ import galpy.util.bovy_coords as coords
 
 from .kernels import *
 
+from clustertools import cart_to_sphere,sphere_to_cart
 
 def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
     return np.sqrt(Rcluster**3/(G*Mcluster))
@@ -374,19 +375,20 @@ def get_v2(particles,param,ndim):
             v=particles.vx.value_in(units.kms)
     else:
 
-        if 'vlos' in param or 'vz' in param:
+        if 'vlos' in param:
             v=particles.vz.value_in(units.kms)
 
-        elif 'vR' in param or 'vT' in param:
+        elif 'vr' in param or 'vp' in param or 'vt' in param:
 
-            R,theta,z=coords.rect_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+            r,phi,theta,vr,vp,vt=cart_to_sphere(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
 
-            vR,vT,vz=coords.rect_to_cyl_vec(particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
 
-            if 'vR' in param:
-                v=vR
-            elif 'vT' in param:
-                v=vT
+            if 'vr' in param:
+                v=vr
+            elif 'vp' in param:
+                v=vp
+            elif 'vt' in param:
+                v=vt
 
         elif 'v' in param:
             if ndim==3:
@@ -409,19 +411,20 @@ def get_v(particles,param,ndim):
             v=particles.vx.value_in(units.kms)
     else:
 
-        if 'vlos' in param or 'vz' in param:
+        if 'vlos' in param:
             v=particles.vz.value_in(units.kms)
 
-        elif 'vR' in param or 'vT' in param:
+        elif 'vr' in param or 'vp' in param or 'vt' in param:
 
-            R,theta,z=coords.rect_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+            r,phi,theta,vr,vp,vt=cart_to_sphere(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
 
-            vR,vT,vz=coords.rect_to_cyl_vec(particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
 
-            if 'vR' in param:
-                v=vR
-            elif param=='vT':
-                v=vT
+            if 'vr' in param:
+                v=vr
+            elif param=='vp':
+                v=vp
+            elif 'vt' in param:
+                v=vt
 
         elif 'v' in param:
             if ndim==3:
@@ -566,5 +569,3 @@ def binmaker(x, nbin=10, nsum=False, steptype="linear"):
 
 def chi2(obs,mod):
     return np.sum(((mod-obs)**2.)/obs)
-
-
