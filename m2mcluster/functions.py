@@ -376,7 +376,7 @@ def get_v2(particles,param,ndim):
     else:
 
         if 'vlos' in param:
-            v=particles.vz.value_in(units.kms)
+            v=particles.vx.value_in(units.kms)
 
         elif 'vr' in param or 'vp' in param or 'vt' in param:
 
@@ -412,7 +412,7 @@ def get_v(particles,param,ndim):
     else:
 
         if 'vlos' in param:
-            v=particles.vz.value_in(units.kms)
+            v=particles.vx.value_in(units.kms)
 
         elif 'vr' in param or 'vp' in param or 'vt' in param:
 
