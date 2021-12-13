@@ -380,7 +380,7 @@ def get_v2(particles,param,ndim):
 
         elif 'vr' in param or 'vp' in param or 'vt' in param:
 
-            r,phi,theta,vr,vp,vt=cart_to_sphere(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+            r,phi,theta,vr,vp,vt=cart_to_sphere(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms))
 
 
             if 'vr' in param:
@@ -392,7 +392,7 @@ def get_v2(particles,param,ndim):
 
         elif 'vR' in param or 'vT' in param or 'vz' in param:
 
-            R, theta, z, vR, vT, vz=cart_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+            R, theta, z, vR, vT, vz=cart_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms))
 
             if 'vR' in param:
                 v=vR
@@ -427,7 +427,7 @@ def get_v(particles,param,ndim):
 
         elif 'vr' in param or 'vp' in param or 'vt' in param:
 
-            r,phi,theta,vr,vp,vt=cart_to_sphere(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+            r,phi,theta,vr,vp,vt=cart_to_sphere(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms))
 
 
             if 'vr' in param:
@@ -439,7 +439,7 @@ def get_v(particles,param,ndim):
 
         elif 'vR' in param or 'vT' in param or 'vz' in param:
 
-            R, theta, z, vR, vT, vz=cart_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms),particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec))
+            R, theta, z, vR, vT, vz=cart_to_cyl(particles.x.value_in(units.parsec),particles.y.value_in(units.parsec),particles.z.value_in(units.parsec),particles.vx.value_in(units.kms),particles.vy.value_in(units.kms),particles.vz.value_in(units.kms)) 
 
             if 'vR' in param:
                 v=vR
