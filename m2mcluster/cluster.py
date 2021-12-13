@@ -389,9 +389,9 @@ class starcluster(object):
 
 		outfile.write('%f,' % self.criteria)
 
-		for c in c2:
+		for i,c in enumerate(c2):
 
-			if c==c2[-1]:
+			if i==len(c2)-1:
 				outfile.write('%f' % c)
 			else:
 				outfile.write('%f,' % c)
