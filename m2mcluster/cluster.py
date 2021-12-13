@@ -226,7 +226,7 @@ class starcluster(object):
 			
 				vrn=np.random.normal(0.,np.std(vr),ntot)
 				vpn=np.random.normal(0.,np.std(vp),ntot)
-				vTn=np.random.normal(0.,np.std(vt),ntot)
+				vtn=np.random.normal(0.,np.std(vt),ntot)
 
 				xn,yn,zn,vxn,vyn,vzn = sphere_to_cart(rn,phin,thetan,vrn,vpn,vtn)
 
