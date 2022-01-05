@@ -225,7 +225,7 @@ class starcluster(object):
 				thetan=np.arccos(1.0-2.0*np.random.rand(ntot))
 			
 				vrn=np.random.normal(np.mean(vr),np.std(vr),ntot)
-				vpn=np.random.normal(np.mean(vp).,np.std(vp),ntot)
+				vpn=np.random.normal(np.mean(vp),np.std(vp),ntot)
 				vtn=np.random.normal(np.mean(vt),np.std(vt),ntot)
 
 				xn,yn,zn,vxn,vyn,vzn = sphere_to_cart(rn,phin,thetan,vrn,vpn,vtn)
