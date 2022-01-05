@@ -87,7 +87,7 @@ def density_weighted_mean_squared_velocity_profile(stars,observations,nbin=20,bi
             pyplot.loglog(rmid[mindx],v2[mindx],'ko')
 
             pyplot.legend()
-            pyplot.xlabel(r'$\rm \log_{10} r \ (pc)')
+            pyplot.xlabel(r'$ \rm \log_{10} r \ (pc)$')
 
             if 'Sigma' in oparam:
                 pyplot.ylabel(r'$\rm \log_{10} \Sigma <v^2> \ (M_{\odot}/pc^3 \ km/s)$')
