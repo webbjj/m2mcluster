@@ -205,7 +205,8 @@ class starcluster(object):
 
 		w0bar=np.mean(self.w0)
 		r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
-
+		m=self.stars.mass.value_in(units.MSun)
+		mindx=m>0
 		mnew=np.array([])
 		xnew=np.array([])
 		ynew=np.array([])
@@ -215,9 +216,9 @@ class starcluster(object):
 		vznew=np.array([])
 
 		if bintype=='num':
-		    rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
+		    rlower, rmid, rupper, rhist=nbinmaker(r[mindx],nbin=nbin)
 		elif bintype =='fix':
-		    rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+		    rlower, rmid, rupper, rhist=binmaker(r[mindx],nbin=nbin)
 
 		for i in range(0,len(rmid)):
 			rindx=(r>=rlower[i])*(r<rupper[i])
