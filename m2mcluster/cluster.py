@@ -131,7 +131,7 @@ class starcluster(object):
 		#set masses to stars less than mmin to zero:
 		if mmin is not None:
 			indx=self.stars.mass < mmin
-			self.stars.m[rindx]= 0. | units.MSun
+			self.stars.mass[rindx]= 0. | units.MSun
 
 			#self.stars.remove_particles(self.stars[indx])
 			#self.w0=self.w0[np.invert(indx)]
