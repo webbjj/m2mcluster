@@ -119,7 +119,7 @@ class starcluster(object):
 		#set masses to stars beyond rmax to zero:
 		if rmax is not None:
 			r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
-			indx=(r>rmax)
+			indx=(r>rmax.value_in(units.parsec))
 			self.stars.m[indx]= 0. | units.MSun
 
 			if self.debug:
