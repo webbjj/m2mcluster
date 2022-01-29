@@ -107,7 +107,7 @@ class starcluster(object):
 
 		return self.stars,self.converter
 
-	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None, nbin=50, bintype='num'):
+	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None, rmax=None, nbin=50, bintype='num'):
 
 		if self.debug:
 			print('REINITIALIZE:')
@@ -115,11 +115,26 @@ class starcluster(object):
 			print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
 			print('N = ',len(self.stars))
 
-		#remove stars with masses below mmin
+
+		#set masses to stars beyond rmax to zero:
+		if rmax is not None:
+			r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
+			indx=(r>rmax)
+			self.stars.m[indx]= 0. | units.MSun
+
+			if self.debug:
+				print('Remove %i stars beyond rmax' % np.sum(indx))
+				print('Mcluster = ',self.stars.total_mass().value_in(units.MSun),np.sum(self.stars.mass.value_in(units.MSun)))
+				print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
+				print('N = ',len(self.stars))
+
+		#set masses to stars less than mmin to zero:
 		if mmin is not None:
 			indx=self.stars.mass < mmin
-			self.stars.remove_particles(self.stars[indx])
-			self.w0=self.w0[np.invert(indx)]
+			self.stars.m[rindx]= 0. | units.MSun
+
+			#self.stars.remove_particles(self.stars[indx])
+			#self.w0=self.w0[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i low mass stars' % np.sum(indx))
