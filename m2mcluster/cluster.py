@@ -120,7 +120,10 @@ class starcluster(object):
 		if rmax is not None:
 			r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
 			indx=(r>rmax.value_in(units.parsec))
-			self.stars.m[indx]= 0. | units.MSun
+			
+			#self.stars.mass[indx]= 0. | units.MSun
+			self.stars.remove_particles(self.stars[indx])
+			self.w0=self.w0[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i stars beyond rmax' % np.sum(indx))
@@ -131,10 +134,10 @@ class starcluster(object):
 		#set masses to stars less than mmin to zero:
 		if mmin is not None:
 			indx=self.stars.mass < mmin
-			self.stars.mass[rindx]= 0. | units.MSun
+			#self.stars.mass[rindx]= 0. | units.MSun
 
-			#self.stars.remove_particles(self.stars[indx])
-			#self.w0=self.w0[np.invert(indx)]
+			self.stars.remove_particles(self.stars[indx])
+			self.w0=self.w0[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i low mass stars' % np.sum(indx))
@@ -205,8 +208,7 @@ class starcluster(object):
 
 		w0bar=np.mean(self.w0)
 		r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
-		m=self.stars.mass.value_in(units.MSun)
-		mindx=m>0
+
 		mnew=np.array([])
 		xnew=np.array([])
 		ynew=np.array([])
@@ -216,9 +218,9 @@ class starcluster(object):
 		vznew=np.array([])
 
 		if bintype=='num':
-		    rlower, rmid, rupper, rhist=nbinmaker(r[mindx],nbin=nbin)
+		    rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
 		elif bintype =='fix':
-		    rlower, rmid, rupper, rhist=binmaker(r[mindx],nbin=nbin)
+		    rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
 
 		for i in range(0,len(rmid)):
 			rindx=(r>=rlower[i])*(r<rupper[i])
