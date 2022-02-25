@@ -396,7 +396,7 @@ def get_v2(particles,param,ndim):
 
             if 'vR' in param:
                 v=vR
-            elif param=='vT':
+            elif 'vT' in param:
                 v=vT
             elif 'vz' in param:
                 v=vz
@@ -432,7 +432,7 @@ def get_v(particles,param,ndim):
 
             if 'vr' in param:
                 v=vr
-            elif param=='vp':
+            elif 'vp' in param:
                 v=vp
             elif 'vt' in param:
                 v=vt
@@ -443,7 +443,7 @@ def get_v(particles,param,ndim):
 
             if 'vR' in param:
                 v=vR
-            elif param=='vT':
+            elif 'vT' in param:
                 v=vT
             elif 'vz' in param:
                 v=vz

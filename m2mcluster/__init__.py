@@ -9,7 +9,6 @@ from . import setup
 #
 
 made_to_measure=algorithm.made_to_measure
-new_made_to_measure_bovy=algorithm.new_made_to_measure_bovy
 made_to_measure_bovy=algorithm.made_to_measure_bovy
 
 
@@ -25,8 +24,6 @@ mean_velocity=functions.mean_velocity
 weighted_mean_relative_velocity=functions.weighted_mean_relative_velocity
 density_weighted_mean_squared_velocity=functions.density_weighted_mean_squared_velocity
 standard_density_weighted_mean_squared_velocity=functions.standard_density_weighted_mean_squared_velocity
-
-cart_to_sphere=functions.cart_to_sphere
 
 
 nbinmaker=functions.nbinmaker
