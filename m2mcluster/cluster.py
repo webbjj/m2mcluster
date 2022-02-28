@@ -11,6 +11,7 @@ from amuse.community.hermite.interface import Hermite
 from amuse.community.bhtree.interface import BHTree
 from amuse.community.gadget2.interface import Gadget2
 from amuse.datamodel import Particles
+from amuse.couple import bridge
 
 from clustertools import cart_to_sphere,sphere_to_cart
 
@@ -26,6 +27,8 @@ try:
     from galpy.util import coords
 except:
     import galpy.util.bovy_coords as coords
+
+from galpy.potential import to_amuse
 
 class starcluster(object):
 
@@ -264,6 +267,9 @@ class starcluster(object):
 		pass
 
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
+
+		self.bridge=False
+
 		if gravity_code=='BHTree':
 			self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
 			self.gravity_code.parameters.epsilon_squared = self.softening2
@@ -287,8 +293,26 @@ class starcluster(object):
 			theta=kwargs.get('theta',0.6)
 			self.gravity_code.parameters.opening_angle=theta
 
+		elif gravity_code=='Galpy':
+			self.bridge=True
 
-	def evolve(self,tend=1. | units.Myr):
+			pot=kwargs.get('pot')
+			galaxy_code=to_amuse(pot)
+
+			self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+			self.gravity_code.parameters.epsilon_squared = self.softening2
+			self.gravity_code.parameters.timestep=dt
+			self.gravity_code.parameters.use_self_gravity=False
+			theta=kwargs.get('theta',0.6)
+			self.gravity_code.parameters.opening_angle=theta
+
+
+			self.gravity_bridge=bridge.Bridge(use_threading=False)
+			self.gravity_bridge.add_system(self.gravity_code, (galaxy_code,))
+			self.gravity_bridge.timestep = dt/2.
+
+
+	def evolve(self,tend=1. | units.Myr, pot = None):
 
 
 		print('TIME UNITS: ',tend.as_quantity_in(units.Myr),len(self.stars),self.stars.total_mass().value_in(units.MSun),self.stars.virial_radius().value_in(units.parsec),self.criteria)
@@ -300,11 +324,18 @@ class starcluster(object):
 		channel_from_stars_to_cluster=self.stars.new_channel_to(self.gravity_code.particles, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
 		channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
 
-		self.gravity_code.evolve_model(tend)
+		if self.bridge:
+			self.gravity_bridge.evolve_model(tend)
+		else:
+
+			self.gravity_code.evolve_model(tend)
 
 		channel_from_cluster_to_stars.copy()
 
-		self.gravity_code.stop()
+		if self. bridge:
+			self.gravity_bridge.stop()
+		else:
+			self.gravity_code.stop()
 
 		self.stars.move_to_center()
 
