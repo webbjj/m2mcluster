@@ -297,20 +297,11 @@ class starcluster(object):
 			self.bridge=True
 
 			pot=kwargs.get('pot')
-			galaxy_code=to_amuse(pot)
+			self.galaxy_code=to_amuse(pot)
 
-			self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
-			self.gravity_code.parameters.epsilon_squared = self.softening2
-			self.gravity_code.parameters.timestep=dt
-			self.gravity_code.parameters.use_self_gravity=False
-			theta=kwargs.get('theta',0.6)
-			self.gravity_code.parameters.opening_angle=theta
+			self.gravity_code=drift_without_gravity(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
 
-
-			self.gravity_bridge=bridge.Bridge(use_threading=False)
-			self.gravity_bridge.add_system(self.gravity_code, (galaxy_code,))
-			self.gravity_bridge.timestep = dt/2.
-
+			self.dtbridge=dt
 
 	def evolve(self,tend=1. | units.Myr, pot = None):
 
@@ -325,6 +316,9 @@ class starcluster(object):
 		channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
 
 		if self.bridge:
+			self.gravity_bridge=bridge.Bridge(use_threading=False)
+			self.gravity_bridge.add_system(self.gravity_code, (self.galaxy_code,))
+			self.gravity_bridge.timestep = self.dtbridge
 			self.gravity_bridge.evolve_model(tend)
 		else:
 
@@ -453,7 +447,24 @@ class starcluster(object):
 
 
 
-	
+class drift_without_gravity(object):
+    def __init__(self, convert_nbody, time= 0 |units.Myr):
+        self.model_time = time
+        self.convert_nbody = convert_nbody
+        self.particles = Particles()
+    def evolve_model(self, t_end):
+        dt = t_end - self.model_time
+        self.particles.position += self.particles.velocity*dt
+        self.model_time = t_end
+    @property
+    def potential_energy(self):
+        return quantities.zero
+    @property 
+    def kinetic_energy(self):
+        return (0.5*self.particles.mass \
+                   *self.particles.velocity.lengths()**2).sum()
+    def stop(self):
+        pass
 
 
 
