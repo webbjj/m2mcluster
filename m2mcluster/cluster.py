@@ -207,10 +207,14 @@ class starcluster(object):
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)
 
-	def resample(self,mindx,nbin=50,bintype='num'):
+	def resample(self,mindx,nbin=50,bintype='num',rscatter=0.,vscatter=0.):
 
 		w0bar=np.mean(self.w0)
-		r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
+
+		x,y,z=self.stars.x.value_in(units.parsec),self.stars.y.value_in(units.parsec),self.stars.z.value_in(units.parsec)
+		vx,vy,vz=self.stars.vx.value_in(units.kms),self.stars.vy.value_in(units.kms),self.stars.vz.value_in(units.kms)
+
+		r,phi,theta,vr,vp,vt=cart_to_sphere(x,y,z,vx,vy,vz)
 
 		mnew=np.array([])
 		xnew=np.array([])
@@ -219,6 +223,38 @@ class starcluster(object):
 		vxnew=np.array([])
 		vynew=np.array([])
 		vznew=np.array([])
+
+		for i in range(0,np.sum(mindx)):
+			mtot=self.stars.mass[mindx][i].value_in(units.MSun)
+			ntot=int(np.ceil(mtot/w0bar))
+			rn=np.ones(ntot)*r[mindx][i]
+			phin=2.0*np.pi*np.random.rand(ntot)
+			thetan=np.arccos(1.0-2.0*np.random.rand(ntot))
+
+			vrn=np.ones(ntot)*vr[mindx][i]
+			vpn=np.ones(ntot)*vp[mindx][i]
+			vtn=np.ones(ntot)*vt[mindx][i]
+
+			if rscatter!=0.:
+				rn*=(1.0+(2.0*np.random.rand(ntot)*rscatter-rscatter))
+			if vscatter!=0.:
+				vrn*=(1.0+(2.0*np.random.rand(ntot)*vscatter-vscatter))
+				vpn*=(1.0+(2.0*np.random.rand(ntot)*vscatter-vscatter))
+				vtn*=(1.0+(2.0*np.random.rand(ntot)*vscatter-vscatter))
+
+			xn,yn,zn,vxn,vyn,vzn = sphere_to_cart(rn,phin,thetan,vrn,vpn,vtn)
+
+			mnew=np.append(mnew,np.ones(ntot)*w0bar)
+			xnew=np.append(xnew,xn)
+			ynew=np.append(ynew,yn)
+			znew=np.append(znew,zn)
+
+			vxnew=np.append(vxnew,vxn)
+			vynew=np.append(vynew,vyn)
+			vznew=np.append(vznew,vzn)				
+
+
+		"""
 
 		if bintype=='num':
 		    rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
@@ -259,6 +295,7 @@ class starcluster(object):
 				vxnew=np.append(vxnew,vxn)
 				vynew=np.append(vynew,vyn)
 				vznew=np.append(vznew,vzn)
+		"""
 
 		return mnew,xnew,ynew,znew,vxnew,vynew,vznew
 
@@ -298,9 +335,7 @@ class starcluster(object):
 
 			pot=kwargs.get('pot')
 			self.galaxy_code=to_amuse(pot)
-
-			self.gravity_code=drift_without_gravity(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
-
+			self.gravity_code=drift_without_gravity(convert_nbody=self.converter)
 			self.dtbridge=dt
 
 	def evolve(self,tend=1. | units.Myr, pot = None):
@@ -310,7 +345,7 @@ class starcluster(object):
 
 
 		self.gravity_code.particles.add_particles(self.stars)
-		self.gravity_code.commit_particles()
+		if not self.bridge: self.gravity_code.commit_particles()
 
 		channel_from_stars_to_cluster=self.stars.new_channel_to(self.gravity_code.particles, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
 		channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
@@ -318,7 +353,7 @@ class starcluster(object):
 		if self.bridge:
 			self.gravity_bridge=bridge.Bridge(use_threading=False)
 			self.gravity_bridge.add_system(self.gravity_code, (self.galaxy_code,))
-			self.gravity_bridge.timestep = self.dtbridge
+			self.gravity_bridge.timestep = self.dtbridge/2.
 			self.gravity_bridge.evolve_model(tend)
 		else:
 
