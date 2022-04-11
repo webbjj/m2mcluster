@@ -98,6 +98,10 @@ class starcluster(object):
 
 			self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha)
 
+
+		self.ids=np.arange(0,len(self.stars),1)
+		self.ntot=len(self.stars)
+
 		self.softening2=softening**2.
 
 		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
@@ -127,6 +131,7 @@ class starcluster(object):
 			#self.stars.mass[indx]= 0. | units.MSun
 			self.stars.remove_particles(self.stars[indx])
 			self.w0=self.w0[np.invert(indx)]
+			self.ids=self.ids[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i stars beyond rmax' % np.sum(indx))
@@ -141,6 +146,7 @@ class starcluster(object):
 
 			self.stars.remove_particles(self.stars[indx])
 			self.w0=self.w0[np.invert(indx)]
+			self.ids=self.ids[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i low mass stars' % np.sum(indx))
@@ -182,9 +188,13 @@ class starcluster(object):
 
 				self.stars.remove_particles(self.stars[mindx])
 				self.w0=self.w0[np.invert(mindx)]
+				self.ids=self.ids[np.invert(mindx)]
+
 
 				self.stars.add_particles(new_stars)
 				self.w0=np.append(self.w0,new_w0)
+				self.ids=np.append(self.ids,np.arange(self.ntot+1,self.ntot+1+len(new_stars),1))
+				self.ntot+=len(new_stars)
 
 				if self.debug:
 					print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
@@ -478,7 +488,19 @@ class starcluster(object):
 
 
 	def snapout(self):
-		write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
+
+		m=self.stars.mass.value_in(units.MSun)
+		x=self.stars.x.value_in(units.parsec)
+		y=self.stars.y.value_in(units.parsec)
+		z=self.stars.z.value_in(units.parsec)
+		vx=self.stars.vx.value_in(units.kms)
+		vy=self.stars.vy.value_in(units.kms)
+		vz=self.stars.vz.value_in(units.kms)
+		ids=self.ids
+
+		np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids]))
+
+		#write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
 
 
 
