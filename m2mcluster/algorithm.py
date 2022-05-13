@@ -28,8 +28,12 @@ def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,mscal
 
     else:
 
-        stars,chi_squared,delta_j_tilde=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs)
-        return stars,chi_squared,delta_j_tilde
+        if kwargs.get('return_dwdt',False):
+            stars,chi_squared,delta_j_tilde,dwdt=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs)
+            return stars,chi_squared,delta_j_tilde,dwdt
+        else:
+            stars,chi_squared,delta_j_tilde=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs)
+            return stars,chi_squared,delta_j_tilde
 
 
 def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
@@ -328,17 +332,21 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
        
             dchisum=np.sum(dchi2)/2.
 
-            if debug and i==0: print(i,r[i],delta_j_tilde,K_j,sigma,v2[i],dchisum)
+            if debug and i==0: print(i,r[i],delta_j_tilde[j],K_j,sigma,v2[i],dv,dchisum)
 
             dwdt[i]-=epsilon*stars[i].mass.value_in(units.MSun)*dchisum
 
             chi_squared+=np.sum((delta_j_tilde[j]/sigma)**2.)
 
+            if debug and i==0: print('DWDT: ',dwdt[i])
 
     stars.mass += step*dwdt | units.MSun
 
 
-    return stars,chi_squared,delta_j_tilde
+    if kwargs.get('return_dwdt',False):
+        return stars,chi_squared,delta_j_tilde,dwdt
+    else:
+        return stars,chi_squared,delta_j_tilde
 
 def made_to_measure_hunt(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,mscale=1.,zeta=1.,xi=None,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
     

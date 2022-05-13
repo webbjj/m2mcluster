@@ -112,6 +112,78 @@ class starcluster(object):
 		#Default weights
 		self.w0=self.stars.mass.value_in(units.MSun)
 
+		self.dwdt=np.zeros(len(self.w0))
+
+		return self.stars,self.converter
+
+	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard'):
+
+		filename='%s.csv' % str(nsnap).zfill(5)
+
+		self.niteration=nsnap
+
+		data=np.loadtxt(filename,unpack=True,skiprows=3,delimiter=',')
+
+		if fmt=='original':
+			mass,vx,vy,vz,x,y,z=data.astype(float)
+			ids=np.arange(0,len(x),1)
+
+		elif fmt=='test':
+			mass,rad,vx,vy,vz,x,y,z=data.astype(float)
+			ids=np.arange(0,len(x),1)
+		else:
+			mass,vx,vy,vz,x,y,z,ids=data.astype(float)
+
+
+
+		if unit=='msunpckms':
+			self.stars=Particles(len(x))
+			self.stars.mass = mass | units.MSun
+			self.stars.x=x | units.parsec
+			self.stars.y=y | units.parsec
+			self.stars.z=z | units.parsec
+			self.stars.vx=vx | units.kms
+			self.stars.vy=vy | units.kms
+			self.stars.vz=vz | units.kms
+		elif unit=='kgmms':
+			self.stars=Particles(len(x))
+			self.stars.mass = mass | units.kg
+			self.stars.x=x | units.m
+			self.stars.y=y | units.m
+			self.stars.z=z | units.m
+			self.stars.vx=vx | units.ms
+			self.stars.vy=vy | units.ms
+			self.stars.vz=vz | units.ms
+
+		Mcluster=self.stars.total_mass()
+		Rcluster=self.stars.virial_radius()
+		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
+
+		self.ids=ids
+		self.ntot=len(self.stars)
+
+		self.softening2=softening**2.
+
+		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
+
+		if self.calc_step:
+			self.step=self.tdyn.value_in(units.Myr)
+
+		#Default weights
+		if isinstance(w0,float):
+			self.w0=np.ones(len(self.stars))*w0
+		else:
+			self.w0=w0
+
+		self.dwdt=np.zeros(len(self.w0))
+
+		outfile=open(outfilename,'r')
+		self.outfile=open(outfilename+'.restart.','w')
+
+		for i in range(0,nsnap):
+			line=outfile.readline()
+			self.outfile.write(line)
+
 		return self.stars,self.converter
 
 	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None, rmax=None, nbin=50, bintype='num'):
@@ -132,6 +204,7 @@ class starcluster(object):
 			self.stars.remove_particles(self.stars[indx])
 			self.w0=self.w0[np.invert(indx)]
 			self.ids=self.ids[np.invert(indx)]
+			self.dwdt=self.dwdt[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i stars beyond rmax' % np.sum(indx))
@@ -147,6 +220,7 @@ class starcluster(object):
 			self.stars.remove_particles(self.stars[indx])
 			self.w0=self.w0[np.invert(indx)]
 			self.ids=self.ids[np.invert(indx)]
+			self.dwdt=self.dwdt[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i low mass stars' % np.sum(indx))
@@ -189,12 +263,14 @@ class starcluster(object):
 				self.stars.remove_particles(self.stars[mindx])
 				self.w0=self.w0[np.invert(mindx)]
 				self.ids=self.ids[np.invert(mindx)]
+				self.dwdt=self.dwdt[np.invert(mindx)]
 
 
 				self.stars.add_particles(new_stars)
 				self.w0=np.append(self.w0,new_w0)
 				self.ids=np.append(self.ids,np.arange(self.ntot+1,self.ntot+1+len(new_stars),1))
 				self.ntot+=len(new_stars)
+				self.dwdt=np.append(self.dwdt,np.zeros(len(new_stars)))
 
 				if self.debug:
 					print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
@@ -382,7 +458,12 @@ class starcluster(object):
 
 	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,mscale=1.,zeta=None,xi=None,method='Seyer', **kwargs):
 			
-		self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+
+		if kwargs.get('return_dwdt',False):
+			self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+		else:
+			self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+			self.dwdt=np.zeros(len(self.stars))
 
 		self.niteration+=1
 
