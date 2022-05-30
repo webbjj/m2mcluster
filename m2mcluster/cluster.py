@@ -116,13 +116,16 @@ class starcluster(object):
 
 		return self.stars,self.converter
 
-	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard'):
+	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard',**kwargs):
 
 		filename='%s.csv' % str(nsnap).zfill(5)
 
 		self.niteration=nsnap
 
-		data=np.loadtxt(filename,unpack=True,skiprows=3,delimiter=',')
+		try:
+			data=np.loadtxt(filename,unpack=True,skiprows=3,delimiter=',')
+		except:
+			data=np.loadtxt(filename,unpack=True,**kwargs)
 
 		if fmt=='original':
 			mass,vx,vy,vz,x,y,z=data.astype(float)
@@ -178,11 +181,13 @@ class starcluster(object):
 		self.dwdt=np.zeros(len(self.w0))
 
 		outfile=open(outfilename,'r')
-		self.outfile=open(outfilename+'.restart.','w')
+		self.outfile=open(outfilename+'.restart','w')
 
 		for i in range(0,nsnap):
 			line=outfile.readline()
 			self.outfile.write(line)
+
+		outfile.close()
 
 		return self.stars,self.converter
 
