@@ -222,7 +222,8 @@ def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None
             kernel_rho=kernel
             ndim_rho=ndim
 
-        rhov2prof=density_weighted_mean_squared_velocity(particles,rlower=rlower_rho,rmid=rmid_rho,rupper=rupper_rho,param='rho%s' % param,ndim=ndim_rho,nbin=len(rmid_rho),kernel=kernel_rho,bins=False, bintype=bintype, **kwargs) 
+        #rhov2prof=density_weighted_mean_squared_velocity(particles,rlower=rlower_rho,rmid=rmid_rho,rupper=rupper_rho,param='rho%s' % param,ndim=ndim_rho,nbin=len(rmid_rho),kernel=kernel_rho,bins=False, bintype=bintype, **kwargs) 
+        rhov2prof=density_weighted_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param='rho%s' % param,ndim=ndim,nbin=len(rmid),kernel=kernel,bins=False, bintype=bintype, **kwargs) 
 
         #Normalizing denominator
 

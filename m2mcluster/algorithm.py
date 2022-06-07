@@ -275,12 +275,13 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
     #Calculate delta_j,velocities (if necessary) and radii for each observable
 
+        print(len(mod),len(obs),param)
         delta_j=(mod-obs)
 
         if param=='rho' or param=='Sigma':
             v2=([None]*len(stars))
         else:
-            v2=(get_v2(stars,param,ndim))
+            v2=(get_v2(stars,param,ndim,))
 
         if ndim==3:
             r=np.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.+(stars.z.value_in(units.parsec))**2.)
@@ -298,8 +299,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         else:
             delta_j_tilde[j]+=step*alpha*(delta_j-delta_j_tilde[j])
 
-
-
+        chi_squared+=np.sum((delta_j_tilde[j]/sigma)**2.)
 
         #Find dwdt for each star
         for i in range(0,len(stars)):
@@ -335,8 +335,6 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
             if debug and i==0: print(i,r[i],delta_j_tilde[j],K_j,sigma,v2[i],dv,dchisum)
 
             dwdt[i]-=epsilon*stars[i].mass.value_in(units.MSun)*dchisum
-
-            chi_squared+=np.sum((delta_j_tilde[j]/sigma)**2.)
 
             if debug and i==0: print('DWDT: ',dwdt[i])
 
