@@ -3,7 +3,7 @@ import numpy as np
 def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
 
     vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
-    area=(4.)*np.pi*(rupper**2.-rlower**2.)
+    area=np.pi*(rupper**2.-rlower**2.)
 
     norm=kwargs.get('norm',True)
 
