@@ -46,13 +46,12 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
 
     elif kernel == 'epanechnikov':
 
-        h=kwargs.get('h',(rupper[0]-rlower[0]))
         rindx=((r >= rlower) * (r <= rupper))
 
         if np.sum(rindx)!=0:
+            h=kwargs.get('h',(rupper[rindx][0]-rlower[rindx][0]))
             x=np.fabs(rmid-r)
             K_j=epanechnikov_kernel(x,h)
-
         else:
             K_j=np.zeros(len(rlower))
 
