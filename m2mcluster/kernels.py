@@ -67,10 +67,12 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
 
 def gaussian_kernel(r,rmean,sigma):
 
-	sigma2=sigma**2.
-	f=(1./np.sqrt(2*np.pi*sigma2))*np.exp(-0.5*((r-rmean)**2.)/sigma2)
-	
-	return f
+    sigma2=sigma**2.
+    f=(1./np.sqrt(2*np.pi*sigma2))*np.exp(-0.5*((r-rmean)**2.)/sigma2)
+
+    f/=np.sum(f)
+
+    return f
 
 def epanechnikov_kernel(x,h):
 
