@@ -62,6 +62,28 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
         else:
             K_j*=1.
 
+    elif kernel == 'sph':
+        h=kwargs.get('h',(rupper-rlower))
+
+        if isinstance(h,float):
+            h=np.ones(len(rupper))*h
+
+        rindx=((r >= rlower) * (r <= rupper))
+
+        if np.sum(rindx)!=0:
+            x=np.fabs(rmid-r)
+            K_j=sph_kernel(x,h[rindx])
+
+        else:
+            K_j=np.zeros(len(rlower))
+
+        if ndim==3 and norm:
+            K_j=K_j*(1./vol)
+        elif ndim==2 and norm:
+            K_j=K_j*(1./area)
+        else:
+            K_j*=1.
+
     return K_j
 
 
@@ -86,4 +108,22 @@ def bovy_epanechnikov_kernel(r,h):
     out= numpy.zeros_like(r)
     out[(r >= 0.)*(r <= h)]= 3./4.*(1.-r[(r >= 0.)*(r <= h)]**2./h**2.)/h
     return out
+
+def sph_kernel(x,h):
+    f=np.zeros(len(x))
+    
+
+    xindx=(x/h>=0) * (x/h<=0.5)
+        
+    if np.sum(xindx)>0:
+        f[xindx]=1.0-6.0*((x[xindx]/h)**2.)+6.0*((x[xindx]/h)**3.)
+    
+    xindx=(x/h>=0.5) * (x/h<=1.)
+
+    if np.sum(xindx)>0:
+        f[xindx]=2.0*(1.0-((x[xindx]/h)**3.))
+        
+    f*=8.0/(np.pi*(h**3.))
+    
+    return f
 
