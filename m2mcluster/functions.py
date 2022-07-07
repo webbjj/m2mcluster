@@ -194,7 +194,7 @@ def weighted_mean_relative_velocity(particles=None,rlower=None,rmid=None,rupper=
 
     return dvj
 
-def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',rlower_rho=None,rmid_rho=None,rupper_rho=None,kernel_rho=None,ndim_rho=None,norm=False,**kwargs):
+def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',norm=False,**kwargs):
 
     if kernel != 'standard':
 
@@ -215,14 +215,6 @@ def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None
         else:
             nbin=len(rlower)
 
-        if rlower_rho is None:
-            rlower_rho=rlower
-            rmid_rho=rmid
-            rupper_rho=rupper
-            kernel_rho=kernel
-            ndim_rho=ndim
-
-        #rhov2prof=density_weighted_mean_squared_velocity(particles,rlower=rlower_rho,rmid=rmid_rho,rupper=rupper_rho,param='rho%s' % param,ndim=ndim_rho,nbin=len(rmid_rho),kernel=kernel_rho,bins=False, bintype=bintype, **kwargs) 
         rhov2prof=density_weighted_mean_squared_velocity(particles,rlower=rlower,rmid=rmid,rupper=rupper,param='rho%s' % param,ndim=ndim,nbin=len(rmid),kernel=kernel,bins=False, bintype=bintype, **kwargs) 
 
         #Normalizing denominator

@@ -29,7 +29,7 @@ def positions_plot(stars,filename=None):
         pyplot.show()
         pyplot.close()
 
-def density_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
+def density_profile(stars,observations,models=None,nbin=20,bintype='num',filename=None,**kwargs):
 
     for oparam in observations:
 
@@ -39,8 +39,10 @@ def density_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwa
             vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)
             area=np.pi*(rupper**2.-rlower**2.)
 
-            mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
-
+            if models is None:
+                mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
+            else:
+                mod_rho=models[param]
 
             #Compare density profiles
             mindx=(mod_rho > 0.) * (rupper < 1.e10)
@@ -67,14 +69,17 @@ def density_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwa
                 pyplot.show()
                 pyplot.close()
 
-def density_weighted_mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
+def density_weighted_mean_squared_velocity_profile(stars,observations,models=None,nbin=20,bintype='num',filename=None,**kwargs):
 
     for oparam in observations:
         if (('rhov' in oparam) and ('2' in oparam)) or (('Sigmav' in oparam) and ('2' in oparam)):
 
             rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
-            mod_v2=density_weighted_mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
 
+            if models is None:
+                mod_v2=density_weighted_mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
+            else:
+                mod_v2=models[param]
 
             #Compare density profiles
             mindx=(mod_v2 > 0.) * (rupper < 1.e10)
@@ -103,7 +108,7 @@ def density_weighted_mean_squared_velocity_profile(stars,observations,nbin=20,bi
                 pyplot.close()
 
 
-def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
+def mean_squared_velocity_profile(stars,observations,models=None,nbin=20,bintype='num',filename=None,**kwargs):
 
     nv=0
 
@@ -112,7 +117,10 @@ def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filen
 
             rlower,rmid,rupper,v2,param,ndim,sigma, obskernel = observations[oparam]
 
-            mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
+            if models is None:
+                mod_v2=mean_squared_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
+            else:
+                mod_v2=models[param]
 
             #Compare density profiles
             mindx=(mod_v2 > 0.) * (rupper < 1.e10)
@@ -147,7 +155,7 @@ def mean_squared_velocity_profile(stars,observations,nbin=20,bintype='num',filen
 
             nv+=1
 
-def mean_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None,**kwargs):
+def mean_velocity_profile(stars,observations,models=None,nbin=20,bintype='num',filename=None,**kwargs):
 
     nv=0
 
@@ -156,8 +164,10 @@ def mean_velocity_profile(stars,observations,nbin=20,bintype='num',filename=None
 
             rlower,rmid,rupper,v,param,ndim,sigma, obskernel = observations[oparam]
 
-            mod_v=mean_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
-
+            if models is None:
+                mod_v=mean_velocity(stars,rlower,rmid, rupper, param, ndim, kernel=obskernel,**kwargs)
+            else:
+                mod_v=models[param]
 
             #Compare density profiles
             mindx=(mod_v > 0.) * (rupper < 1.e10)

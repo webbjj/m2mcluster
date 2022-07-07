@@ -43,6 +43,7 @@ class starcluster(object):
 		self.criteria=0
 
 		self.observations={}
+		self.models={}
 
 		if outfile==None:
 			self.outfile=open('m2moutfile.dat','w')
@@ -53,6 +54,8 @@ class starcluster(object):
 
 		self.calc_step=calc_step
 		self.step=1.
+		self.stars=[]
+
 
 	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',extend_outer=False):
 
@@ -75,9 +78,24 @@ class starcluster(object):
 
 		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
 
+		if len(self.stars) > 0:
+			if parameter=='rho' or parameter=='Sigma':
+				mod=density(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,**kwargs)
+				norm=([None]*len(x))
+
+			elif ('rho' in parameter or 'Sigma' in parameter) and ('v' in parameter) and ('2' in parameter):
+				mod=density_weighted_mean_squared_velocity(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,**kwargs)
+				norm=([None]*len(x))
+			elif ('v' in parameter) and ('2' in parameter):
+				mod,norm=mean_squared_velocity(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,norm=True,**kwargs)
+
+			self.models[parameter]=mod
+		else:
+			self.models[parameter]=None
+
 		self.delta_j_tilde.append(np.zeros(len(x)))
 
-	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename = None):
+	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename = None, **kwargs):
 
 		if filename is not None:
 			m,x,y,z,vx,vy,vz=np.loadtxt(filename,unpack=True)
@@ -96,7 +114,7 @@ class starcluster(object):
 
 		else:
 
-			self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha)
+			self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha, **kwargs)
 
 
 		self.ids=np.arange(0,len(self.stars),1)
@@ -113,6 +131,22 @@ class starcluster(object):
 		self.w0=self.stars.mass.value_in(units.MSun)
 
 		self.dwdt=np.zeros(len(self.w0))
+
+		if len(self.observations) > 0:
+			for j,oparam in enumerate(self.observations):
+
+				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
+
+				if param=='rho' or param=='Sigma':
+					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					norm=([None]*len(rmid))
+				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
+					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					norm=([None]*len(rmid))
+				elif ('v' in param) and ('2' in param):
+					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+
+				self.models[oparam]=mod
 
 		return self.stars,self.converter
 
@@ -195,8 +229,6 @@ class starcluster(object):
 
 		if self.debug:
 			print('REINITIALIZE:')
-			print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
-			print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
 			print('N = ',len(self.stars))
 
 
@@ -204,33 +236,30 @@ class starcluster(object):
 		if rmax is not None:
 			r=np.sqrt((self.stars.x.value_in(units.parsec))**2.+(self.stars.y.value_in(units.parsec))**2.+(self.stars.z.value_in(units.parsec))**2.)
 			indx=(r>rmax.value_in(units.parsec))
-			
-			#self.stars.mass[indx]= 0. | units.MSun
-			self.stars.remove_particles(self.stars[indx])
-			self.w0=self.w0[np.invert(indx)]
-			self.ids=self.ids[np.invert(indx)]
-			self.dwdt=self.dwdt[np.invert(indx)]
+
+			if np.sum(indx)>0:
+				#self.stars.mass[indx]= 0. | units.MSun
+				self.stars.remove_particles(self.stars[indx])
+				self.w0=self.w0[np.invert(indx)]
+				self.ids=self.ids[np.invert(indx)]
+				self.dwdt=self.dwdt[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i stars beyond rmax' % np.sum(indx))
-				print('Mcluster = ',self.stars.total_mass().value_in(units.MSun),np.sum(self.stars.mass.value_in(units.MSun)))
-				print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
 				print('N = ',len(self.stars))
 
 		#set masses to stars less than mmin to zero:
 		if mmin is not None:
 			indx=self.stars.mass < mmin
 			#self.stars.mass[rindx]= 0. | units.MSun
-
-			self.stars.remove_particles(self.stars[indx])
-			self.w0=self.w0[np.invert(indx)]
-			self.ids=self.ids[np.invert(indx)]
-			self.dwdt=self.dwdt[np.invert(indx)]
+			if np.sum(indx)>0:
+				self.stars.remove_particles(self.stars[indx])
+				self.w0=self.w0[np.invert(indx)]
+				self.ids=self.ids[np.invert(indx)]
+				self.dwdt=self.dwdt[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i low mass stars' % np.sum(indx))
-				print('Mcluster = ',self.stars.total_mass().value_in(units.MSun),np.sum(self.stars.mass.value_in(units.MSun)))
-				print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
 				print('N = ',len(self.stars))
 
 		#Scale mass of cluster so total mass equals mtot
@@ -240,8 +269,6 @@ class starcluster(object):
 
 			if self.debug:
 				print('Scale cluster by %f' % mscale)
-				print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
-				print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
 				print('N = ',len(self.stars))
 
 		#For stars with masses above mmax, split the mass with a new star with opposite position and velocity in the cluster
@@ -278,8 +305,6 @@ class starcluster(object):
 				self.dwdt=np.append(self.dwdt,np.zeros(len(new_stars)))
 
 				if self.debug:
-					print('Mcluster = ',self.stars.total_mass().value_in(units.MSun))
-					print('Rcluster = ',self.stars.virial_radius().value_in(units.parsec))
 					print('N = ',len(self.stars))
 
 		self.stars.move_to_center()
@@ -432,7 +457,7 @@ class starcluster(object):
 	def evolve(self,tend=1. | units.Myr, pot = None):
 
 
-		print('TIME UNITS: ',tend.as_quantity_in(units.Myr),len(self.stars),self.stars.total_mass().value_in(units.MSun),self.stars.virial_radius().value_in(units.parsec),self.criteria)
+		print('TIME UNITS: ',tend.value_in(units.Myr),len(self.stars),self.stars.total_mass().value_in(units.MSun),self.criteria)
 
 
 		self.gravity_code.particles.add_particles(self.stars)
@@ -465,30 +490,30 @@ class starcluster(object):
 			
 
 		if kwargs.get('return_dwdt',False):
-			self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+			self.stars,self.models,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
 		else:
-			self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+			self.stars,self.models,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
 			self.dwdt=np.zeros(len(self.stars))
 
 		self.niteration+=1
 
 
-		return self.stars,self.criteria, self.delta_j_tilde
+		return self.stars,self.models,self.criteria,self.delta_j_tilde,self.dwdt
 
 	def xy_plot(self,filename=None):
 		positions_plot(self.stars,filename=filename)
 
 	def rho_prof(self,filename=None):
-	    density_profile(self.stars, self.observations,filename=filename)
+	    density_profile(self.stars, self.observations,self.models,filename=filename)
 
 	def v_prof(self,filename=None):
-		mean_velocity_profile(self.stars, self.observations,filename=filename)
+		mean_velocity_profile(self.stars, self.observations,self.models,filename=filename)
 
 	def v2_prof(self,filename=None):
-		mean_squared_velocity_profile(self.stars, self.observations,filename=filename)
+		mean_squared_velocity_profile(self.stars, self.observations,self.models,filename=filename)
 
 	def rhov2_prof(self,filename=None):
-		density_weighted_mean_squared_velocity_profile(self.stars, self.observations,filename=filename)
+		density_weighted_mean_squared_velocity_profile(self.stars, self.observations,self.models,filename=filename)
 
 	def writeout(self,outfile=None):
 
@@ -528,34 +553,15 @@ class starcluster(object):
 
 		for oparam in self.observations:
 			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
+			mod=self.models[oparam]
 
+			for r in rmid:
+				outfile.write('%f,' % r)
 
-			if param=='rho' or param=='Sigma':
-				mod_rho=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel)
-				for r in rmid:
-					outfile.write('%f,' % r)
+			for m in mod:
+				outfile.write('%f,' % m)
 
-				for rho in mod_rho:
-					outfile.write('%f,' % rho)
-
-				c2=np.append(c2,chi2(obs,mod_rho))
-
-			elif 'v' in param:
-
-				if 'rhov' in param or 'Sigmav' in param:
-					mod_v2=density_weighted_mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
-				elif 'v' in param and '2' in param:
-					mod_v2=mean_squared_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
-				elif 'v' in param and '2' not in param:
-					mod_v2=mean_velocity(self.stars,rlower,rmid, rupper, param, ndim, kernel=kernel)
-
-				for r in rmid:
-					outfile.write('%f,' % r)
-
-				for v2 in mod_v2:
-					outfile.write('%f,' % v2)
-
-				c2=np.append(c2,chi2(obs,mod_v2))
+			c2=np.append(c2,chi2(obs,m))
 
 
 		if self.niteration==0:
