@@ -109,7 +109,7 @@ class starcluster(object):
 			self.stars.vz=vz | units.kms
 
 			Mcluster=self.stars.total_mass()
-			Rcluster=self.stars.virial_radius()
+	    	Rcluster=kwargs.get('rv',self.stars.virial_radius())
 			self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 		else:
@@ -164,7 +164,8 @@ class starcluster(object):
 		if fmt=='original':
 			mass,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)
-
+		elif fmt=='dwdt':
+			mass,rad,vx,vy,vz,x,y,z,ids,dwdt=data.astype(float)
 		elif fmt=='test':
 			mass,rad,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)
@@ -193,7 +194,7 @@ class starcluster(object):
 			self.stars.vz=vz | units.ms
 
 		Mcluster=self.stars.total_mass()
-		Rcluster=self.stars.virial_radius()
+	    Rcluster=kwargs.get('rv',self.stars.virial_radius())
 		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 		self.ids=ids
@@ -309,7 +310,7 @@ class starcluster(object):
 
 		self.stars.move_to_center()
 		Mcluster=self.stars.total_mass()
-		Rcluster=self.stars.virial_radius()
+	    Rcluster=kwargs.get('rv',self.stars.virial_radius())
 
 		if self.debug:
 			print('DONE:')
@@ -579,7 +580,7 @@ class starcluster(object):
 		outfile.write('\n')
 
 
-	def snapout(self):
+	def snapout(self, return_dwdt=False):
 
 		m=self.stars.mass.value_in(units.MSun)
 		x=self.stars.x.value_in(units.parsec)
@@ -590,7 +591,11 @@ class starcluster(object):
 		vz=self.stars.vz.value_in(units.kms)
 		ids=self.ids
 
-		np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids]))
+		if return_dwdt:
+			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids,self.dwdt]))
+
+		else:
+			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids]))
 
 		#write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
 

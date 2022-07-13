@@ -104,6 +104,8 @@ def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.
 
 def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
     
+    ndebug=kwargs.get('ndebug',1)
+
     #array for models
     models={}
 
@@ -180,7 +182,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
             if not np.array_equal(norm,[None]*len(norm)):
                 divindx=norm!=0
-                if debug and i==0: print('NORMALIZING MEAN SQUARE VELOCITY',dchi2,norm)
+                if debug and i==ndebug: print('NORMALIZING MEAN SQUARE VELOCITY',dchi2,norm)
                 dchi2[divindx]/=norm[divindx]
 
                 if np.sum(divindx) != len(divindx):
@@ -191,11 +193,11 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
        
             dchisum=np.sum(dchi2)/2.
 
-            if debug and i==0: print(i,r[i],delta_j_tilde[j],K_j,sigma,v2[i],dv,dchisum)
+            if debug and i==ndebug: print(i,r[i],delta_j_tilde[j],K_j,sigma,v2[i],dv,dchisum)
 
             dwdt[i]-=epsilon*stars[i].mass.value_in(units.MSun)*dchisum
 
-            if debug and i==0: print('DWDT: ',-epsilon*stars[i].mass.value_in(units.MSun)*dchisum,dwdt[i])
+            if debug and i==ndebug: print('DWDT: ',-epsilon*stars[i].mass.value_in(units.MSun)*dchisum,dwdt[i])
 
     stars.mass += step*dwdt | units.MSun
 

@@ -5,7 +5,7 @@ from amuse.lab import *
 from amuse.units import nbody_system,units
 from amuse.datamodel import Particles
 
-def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename=None):
+def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename=None,**kwargs):
 
 	softening2=softening**2.
 
@@ -21,7 +21,7 @@ def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units
 	    stars.vz=vz | units.kms
 	    
 	    Mcluster=stars.total_mass()
-	    Rcluster=stars.virial_radius()
+	    Rcluster=kwargs.get('rv',stars.virial_radius())
 	    converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 	else:
