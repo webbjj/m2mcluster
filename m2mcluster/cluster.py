@@ -122,7 +122,7 @@ class starcluster(object):
 
 		self.softening2=softening**2.
 
-		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
+		self.tdyn=self.stars.dynamical_timescale()
 
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)
@@ -202,7 +202,7 @@ class starcluster(object):
 
 		self.softening2=softening**2.
 
-		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
+		self.tdyn=self.stars.dynamical_timescale()
 
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)
@@ -319,7 +319,7 @@ class starcluster(object):
 			print('N = ',len(self.stars))
 
 		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
-		self.tdyn=get_dynamical_time_scale(Mcluster, Rcluster)
+		self.tdyn=self.stars.dynamical_timescale()
 
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)

@@ -10,9 +10,6 @@ from .kernels import *
 
 from clustertools import cart_to_sphere,cart_to_cyl
 
-def get_dynamical_time_scale(Mcluster, Rcluster, G=constants.G):
-    return np.sqrt(Rcluster**3/(G*Mcluster))
-
 def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=20,kernel='identifier',bins=False, bintype='fix',**kwargs):
 
     if kernel=='standard':

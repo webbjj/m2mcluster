@@ -11,9 +11,6 @@ from . import setup
 made_to_measure=algorithm.made_to_measure
 made_to_measure_bovy=algorithm.made_to_measure_bovy
 
-
-
-get_dynamical_time_scale=functions.get_dynamical_time_scale
 density=functions.density
 standard_density=functions.standard_density
 
