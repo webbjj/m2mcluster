@@ -198,7 +198,12 @@ class starcluster(object):
 			self.stars.vz=vz | units.ms
 
 		Mcluster=self.stars.total_mass()
-		Rcluster=kwargs.get('rv',self.stars.virial_radius())
+
+		Rcluster=kwargs.get('rv',None)
+		if Rcluster is None:
+			Rcluster=self.stars.virial_radius()
+
+
 		self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 		self.ids=ids
@@ -314,7 +319,10 @@ class starcluster(object):
 
 		self.stars.move_to_center()
 		Mcluster=self.stars.total_mass()
-		Rcluster=kwargs.get('rv',self.stars.virial_radius())
+
+		Rcluster=kwargs.get('rv',None)
+		if Rcluster is None:
+			Rcluster=self.stars.virial_radius()
 
 		if self.debug:
 			print('DONE:')
