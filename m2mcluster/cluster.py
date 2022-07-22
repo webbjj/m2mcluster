@@ -20,6 +20,7 @@ import logging
 
 from .plot import *
 from .algorithm import *
+
 from .functions import *
 from .setup import setup_star_cluster
 
@@ -109,7 +110,10 @@ class starcluster(object):
 			self.stars.vz=vz | units.kms
 
 			Mcluster=self.stars.total_mass()
-			Rcluster=kwargs.get('rv',self.stars.virial_radius())
+			Rcluster=kwargs.get('rv',None)
+
+			if Rcluster is None:
+				Rcluster=stars.virial_radius()
 			self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 		else:
@@ -226,7 +230,7 @@ class starcluster(object):
 
 		return self.stars,self.converter
 
-	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None, rmax=None, nbin=50, bintype='num'):
+	def reinitialize_star_cluster(self,mmin=None, mmax=None, mtot=None, rmax=None, nbin=50, bintype='num',**kwargs):
 
 		if self.debug:
 			print('REINITIALIZE:')
@@ -487,13 +491,13 @@ class starcluster(object):
 
 		return self.stars
 
-	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,mscale=1.,zeta=None,xi=None,method='Seyer', **kwargs):
+	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,**kwargs):
 			
 
 		if kwargs.get('return_dwdt',False):
-			self.stars,self.models,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+			self.stars,self.models,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
 		else:
-			self.stars,self.models,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,mscale=mscale,zeta=zeta,xi=xi,step=self.step,delta_j_tilde=self.delta_j_tilde,method=method,debug=self.debug,**kwargs)
+			self.stars,self.models,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
 			self.dwdt=np.zeros(len(self.stars))
 
 		self.niteration+=1

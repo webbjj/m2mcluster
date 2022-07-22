@@ -12,97 +12,7 @@ from scipy.stats import chisquare
 
 from amuse.ext.LagrangianRadii import LagrangianRadii
 
-def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,mscale=1.,zeta=None,xi=None,step=1.,delta_j_tilde=None,method='Seyer',debug=False,**kwargs,):
-    
-    #JO - alpha >= epsilon?
-    #JO - alpha=1/dt is equivalent to no smoothing and alpha cannot be set to a larger value. Which dt? integartion time or eval time?
-
-    if method=='Seyer':
-
-        stars,models,chi_squared,delta_j_tilde=made_to_measure_seyer(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs)
-        return stars,models,chi_squared,delta_j_tilde
-
-    elif method=='Hunt':
-        stars,models,chi_squared,delta_j_tilde=made_to_measure_hunt(stars,observations,w0,epsilon,mu,alpha,mscale,zeta,xi,step,delta_j_tilde,debug,**kwargs)
-        return stars,models,chi_squared,delta_j_tilde
-
-    else:
-
-        if kwargs.get('return_dwdt',False):
-            stars,models,chi_squared,delta_j_tilde,dwdt=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs)
-            return stars,models,chi_squared,delta_j_tilde,dwdt
-        else:
-            stars,models,chi_squared,delta_j_tilde=made_to_measure_bovy(stars,observations,w0,epsilon,mu,alpha,step,delta_j_tilde,debug,**kwargs)
-            return stars,models,chi_squared,delta_j_tilde
-
-
-def made_to_measure_seyer(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
-
-    models={}
-
-    #Get the observed density profile
-    if 'rho' in observations:
-        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel=observations['rho']
-    else:
-        rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel=observations['Sigma']
-
-    #Get the model cluster's current density using the same radial bins as the observed density profile
-    mod_rho=density(stars,rlower,rmid,rupper,param,ndim,kernel=rhokernel,**kwargs)
-    models[param]=mod_rho
-
-    #Entropy:
-    #S=-mu*np.sum(stars.mass.value_in(units.MSun)*np.log(stars.mass.value_in(units.MSun)/w0.value_in(units.MSun)-1.))
-    dsdw=-mu*np.log(stars.mass.value_in(units.MSun)/w0)
-
-    #Calculate delta_j (yj/Yj-1)
-    delta_j=mod_rho/rho-1.
-    Y_j=rho
-
-    #D. Syer & S. Tremaine 1996 - Equation 15
-    if alpha==0.:
-        delta_j_tilde=delta_j
-    else:
-        delta_j_tilde+=step*alpha*(delta_j-delta_j_tilde)
-
-    if debug: 
-        print('OBS_RHO', rho)
-        print('MOD_RHO', mod_rho)
-        print('DELTA = ',delta_j)
-        print('DELTA_TILDE: ',delta_j_tilde)
-
-    if ndim==3:
-        r=np.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.+(stars.z.value_in(units.parsec))**2.)
-    elif ndim==2:
-        r=np.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.)
-
-    #Initialize rate of change in weights within each radial bin to be zero
-    dwdt=np.zeros(len(stars))
-
-    #Find dwdt for each star
-    for i in range(0,len(stars)):
-
-        K_j=get_kernel(r[i],rlower,rmid,rupper,rhokernel,ndim,**kwargs)
-        #Note the sqrt on Y_j due to get_dchi2 taking sigma in bovy formalism
-        dchi2=get_dchi2(delta_j_tilde,K_j,np.sqrt(Y_j))
-
-        #D. Syer & S. Tremaine 1996 - Equation 4
-        dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-np.sum(dchi2)/2.)
-
-        stars[i].mass += step*dwdt[i] | units.MSun
-
-        if r[i]<rupper[0] and debug:
-            print('DWDT INNERMOST: ',epsilon,stars[i].mass.value_in(units.MSun),dsdw[i],dchi2[dchi2!=0.],(dsdw[i]-np.sum(dchi2)/2.),dwdt[i])
-
-
-    #Goodness of fit criteria - D. Syer & S. Tremaine 1996 - Equation 22
-    chi_squared=np.sum((delta_j)**2.)/len(delta_j)
-
-    if debug: 
-        print('WEIGHTING: ',np.amin(dwdt),np.mean(dwdt),np.amax(dwdt),np.amin(dsdw),np.mean(dsdw),np.amax(dsdw),chi_squared)
-
-    return stars,models,chi_squared,delta_j_tilde
-
-def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
+def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
     
     ndebug=kwargs.get('ndebug',1)
 
@@ -126,10 +36,10 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
 
         if param=='rho' or param=='Sigma':
             mod=density(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-            norm=([None]*len(rmid))
+            norm=None
         elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
             mod=density_weighted_mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-            norm=([None]*len(rmid))
+            norm=None
         elif ('v' in param) and ('2' in param):
             mod,norm=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
@@ -141,7 +51,7 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         delta_j=(mod-obs)
 
         if param=='rho' or param=='Sigma':
-            v2=([None]*len(stars))
+            v2=None
         else:
             v2=(get_v2(stars,param,ndim,))
 
@@ -164,40 +74,47 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
         chi_squared+=np.sum((delta_j_tilde[j]/sigma)**2.)
 
         #Find dwdt for each star
-        for i in range(0,len(stars)):
 
-            K_j=(get_kernel(r[i],rlower,rmid,rupper,kernel=kernel,ndim=ndim,**kwargs))
-            if param=='rho' or param=='Sigma':
-                dv=([None]*len(mod))
+        K_j=(get_kernel(r,rlower,rmid,rupper,kernel=kernel,ndim=ndim,**kwargs))
+        if param=='rho' or param=='Sigma':
+            dv=None
 
-            elif 'v' in param and '2' in param and 'rho' not in param and 'Sigma' not in param:
-                dv=(v2[i]-mod)
+        elif 'v' in param and '2' in param and 'rho' not in param and 'Sigma' not in param:
+            dv=v2.reshape(len(v2),1)-mod
+            dv=np.swapaxes(dv,0,1)
+        else:
+            dv=None
+
+        delta_j_tildes=np.array(delta_j_tilde[j]).reshape(len(delta_j_tilde[j]),1)
+        sigmas=np.array(sigma).reshape(len(sigma),1)
+
+        dchi2=get_dchi2(delta_j_tildes,K_j,sigmas,v2,dv)
+
+        if norm is not None:
+            divindx=norm!=0
+            if debug: print('NORMALIZING MEAN SQUARE VELOCITY',dchi2[:,ndebug],norm)
+            dchi2[divindx]/=norm[divindx]
+
+            if np.sum(divindx) != len(divindx):
+                dchi2[np.invert(divindx)]=0.
+
+
+        #Bovy Equation 18
+   
+        dchisum=np.sum(dchi2,axis=0)/2.
+
+        if debug: 
+            if dv is None:
+                if v2 is None:
+                    print(ndebug,r[ndebug],delta_j_tilde[j],K_j[:,ndebug],sigma,None,None,dchisum[ndebug])
+                else:
+                    print(ndebug,r[ndebug],delta_j_tilde[j],K_j[:,ndebug],sigma,v2[ndebug],None,dchisum[ndebug])
             else:
-                dv=([None]*len(mod))
+                print(ndebug,r[ndebug],delta_j_tilde[j],K_j[:,ndebug],sigma,v2[ndebug],dv[ndebug],dchisum[ndebug])
 
+        dwdt-=epsilon*stars.mass.value_in(units.MSun)*dchisum
 
-
-
-            dchi2=(get_dchi2(delta_j_tilde[j],K_j,sigma,v2[i],dv))
-
-            if not np.array_equal(norm,[None]*len(norm)):
-                divindx=norm!=0
-                if debug and i==ndebug: print('NORMALIZING MEAN SQUARE VELOCITY',dchi2,norm)
-                dchi2[divindx]/=norm[divindx]
-
-                if np.sum(divindx) != len(divindx):
-                    dchi2[np.invert(divindx)]=0.
-
-
-            #Bovy Equation 18
-       
-            dchisum=np.sum(dchi2)/2.
-
-            if debug and i==ndebug: print(i,r[i],delta_j_tilde[j],K_j,sigma,v2[i],dv,dchisum)
-
-            dwdt[i]-=epsilon*stars[i].mass.value_in(units.MSun)*dchisum
-
-            if debug and i==ndebug: print('DWDT: ',-epsilon*stars[i].mass.value_in(units.MSun)*dchisum,dwdt[i])
+        if debug: print('DWDT: ',-epsilon*stars[ndebug].mass.value_in(units.MSun)*dchisum[ndebug],dwdt[ndebug])
 
     stars.mass += step*dwdt | units.MSun
 
@@ -207,151 +124,9 @@ def made_to_measure_bovy(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,
     else:
         return stars,models,chi_squared,delta_j_tilde
 
-def made_to_measure_hunt(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,mscale=1.,zeta=1.,xi=None,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
-    
-    modles={}
-
-    #Make sure zeta and xi are set:
-    if xi is None:
-        print('PLEASE SET ZETA AND ALL VALUES OF XI')
-        return -1
-
-    #Get the observed diensity profile
-
-    rlowers=[]
-    rmids=[]
-    ruppers=[]
-    obs=[]
-    params=[]
-    ndims=[]
-    sigmas=[]
-    kernels=[]
-
-    for oparam in observations:
-
-        rlower,rmid,rupper,ob,param,ndim,sigma,obkernel=observations[oparam]
-        rlowers.append(rlower)
-        rmids.append(rmid)
-        ruppers.append(rupper)
-        obs.append(ob)
-        params.append(param)
-        ndims.append(ndim)
-        sigmas.append(sigma)
-        kernels.append(obkernel)
-
-        if oparam=='rho' or oparam=='Sigma':
-            obs_dens=ob
-
-
-    mods=[]
-
-    for j in range(0,len(obs)):
-        if params[j]=='rho' or params[j]=='Sigma':
-            mod=density(stars,rlowers[j],rmids[j],ruppers[j],params[j],ndims[j],kernel=kernels[j],**kwargs)
-        elif ('v' in params[j]):
-            mod=weighted_mean_relative_velocity(particles=stars,rlower=rlowers[j],rmid=rmids[j],rupper=ruppers[j],vprof=obs[j],param=params[j],ndim=ndims[j],kernel=kernels[j],bins=False,**kwargs)
-
-        mods.append(mod)
-        models[params[j]]=mod
-
-
-    #S=-mu*np.sum(stars.mass.value_in(units.MSun)*np.log(stars.mass.value_in(units.MSun)/w0.value_in(units.MSun)-1.))
-    dsdw=-mu*(np.log(stars.mass.value_in(units.MSun)/w0)+1.)
-
-    #Calculate delta_j,velocities (if necessary) and radii for each observable
-    delta_j=[]
-    vs=[]
-    rs=[]
-
-    nv=0
-    dvobs=kwargs.get('dvobs')
-
-    for j in range(0,len(obs)):
-
-        if params[j]=='rho' or params[j]=='Sigma':
-            delta_j.append(mods[j]/obs[j]-1.)
-            vs.append([None]*len(stars))
-        elif 'v' in params[j]:
-            delta_j.append((mods[j]-dvobs[nv])/(sigmas[j]*obs_dens))
-            vs.append(get_v(stars,params[j],ndims[j]))
-            nv+=1
-
-        if ndims[j]==3:
-            r=np.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.+(stars.z.value_in(units.parsec))**2.)
-        elif ndims[j]==2:
-            r=np.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.)
-        elif ndims[j]==1:
-            r=np.sqrt((stars.x.value_in(units.parsec))**2.+(stars.y.value_in(units.parsec))**2.)
-
-        rs.append(r)
-
-    #Bovy Equation 22/23
-    if delta_j_tilde is None or alpha==0.:
-        for j in range(0,len(delta_j_tilde)):
-            delta_j_tilde[j]=delta_j[j]
-    else:
-        for j in range(0,len(delta_j_tilde)):
-            delta_j_tilde[j]+=step*alpha*(delta_j[j]-delta_j_tilde[j])
-
-
-    #Initialize rate of change in weights within each radial bin to be zero
-    dwdt=np.zeros(len(stars))
-
-    #Find dwdt for each star
-    for i in range(0,len(stars)):
-
-        K_j=[]
-
-        for j in range(0,len(obs)):
-            K_j.append(get_kernel(rs[j][i],rlowers[j],rmids[j],ruppers[j],kernel=kernels[j],ndim=ndims[j],**kwargs))
-
-        dc_v=[]
-        nv=0
-
-        for j in range(0,len(obs)):
-            if params[j]=='rho' or params[j]=='Sigma':
-                if debug and i==0: print('RHOTEST: ',K_j[j],delta_j_tilde[j],obs[j])
-
-                dc_rho=mscale*K_j[j]*delta_j_tilde[j]/obs[j]
-                if debug and i==0: print('dc_rho',dc_rho)
-
-            else:
-                delta=vs[j][i]-obs[j]
-                if debug and i==0: print('VTEST: ', K_j[j],delta_j_tilde[j],delta,sigmas[j],obs_dens)
-                dc_v.append(xi[nv]*K_j[j]*delta_j_tilde[j]*delta/(sigmas[j]*obs_dens))
-                if debug and i==0: print('dc_v',nv,dc_v[-1])
-                nv+=1
-
-        #Bovy Equation 18
-        dchisum=np.sum(dc_rho)
-        for j in range(0,nv):
-            dchisum+=mscale*zeta*np.sum(dc_v[j])
-
-        if debug and i==0: 
-            for j in range(0,len(obs)):
-                print('FULL ',i,j,delta_j_tilde[j],K_j[j],sigmas[j],vs[j][i])
-
-        dwdt[i]=epsilon*stars[i].mass.value_in(units.MSun)*(dsdw[i]-dchisum)
-
-        if debug and i==0: 
-            print('DWDT: ',dwdt[i],dsdw[i],np.sum(dc_rho))
-            for j in range(0,nv):
-                print(mscale*zeta*np.sum(dc_v[j]))
-
-
-
-        stars[i].mass += step*dwdt[i] | units.MSun
-
-    #Sum over Chi2 contributions
-    chi_squared=0.
-    for j in range(0,len(obs)):
-        chi_squared+=np.sum((delta_j_tilde[j]/sigmas[j])**2.)
-
-    return stars,models,chi_squared,delta_j_tilde
-
 def get_dchi2(delta_j_tilde,K_j,sigma_j,v2=None,dv=None):
-
-    if not np.array_equal(dv,[None]*len(dv)):
+    
+    if dv is not None:
     #From Bovy Equations  A3
         dchi2=2.0*delta_j_tilde*dv*K_j/(sigma_j**2.)
     

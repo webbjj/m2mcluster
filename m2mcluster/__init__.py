@@ -9,19 +9,11 @@ from . import setup
 #
 
 made_to_measure=algorithm.made_to_measure
-made_to_measure_bovy=algorithm.made_to_measure_bovy
 
 density=functions.density
-standard_density=functions.standard_density
-
 mean_squared_velocity=functions.mean_squared_velocity
-standard_mean_squared_velocity=functions.standard_mean_squared_velocity
-
 mean_velocity=functions.mean_velocity
-weighted_mean_relative_velocity=functions.weighted_mean_relative_velocity
 density_weighted_mean_squared_velocity=functions.density_weighted_mean_squared_velocity
-standard_density_weighted_mean_squared_velocity=functions.standard_density_weighted_mean_squared_velocity
-
 
 nbinmaker=functions.nbinmaker
 binmaker=functions.binmaker

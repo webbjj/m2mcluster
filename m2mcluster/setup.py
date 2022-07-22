@@ -21,7 +21,11 @@ def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units
 	    stars.vz=vz | units.kms
 	    
 	    Mcluster=stars.total_mass()
-	    Rcluster=kwargs.get('rv',stars.virial_radius())
+	    Rcluster=kwargs.get('rv',None)
+
+	    if Rcluster is None:
+	    	Rcluster=stars.virial_radius()
+
 	    converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 	else:
@@ -50,8 +54,8 @@ def setup_star_cluster(N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units
 		elif imf=='single':
 			stars.mass=np.ones(len(stars))*mmin
 
-		    
 	stars.scale_to_standard(convert_nbody=converter, smoothing_length_squared = softening2)
+
 	stars.move_to_center()
 
 	return stars,converter
