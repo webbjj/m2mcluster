@@ -113,7 +113,7 @@ class starcluster(object):
 			Rcluster=kwargs.get('rv',None)
 
 			if Rcluster is None:
-				Rcluster=stars.virial_radius()
+				Rcluster=self.stars.virial_radius()
 			self.converter=nbody_system.nbody_to_si(Mcluster,Rcluster)
 
 		else:

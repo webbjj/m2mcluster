@@ -9,6 +9,7 @@ from . import setup
 #
 
 made_to_measure=algorithm.made_to_measure
+get_dchi2=algorithm.get_dchi2
 
 density=functions.density
 mean_squared_velocity=functions.mean_squared_velocity
@@ -24,6 +25,8 @@ density_profile=plot.density_profile
 density_weighted_mean_squared_velocity_profile=plot.density_weighted_mean_squared_velocity_profile
 
 setup_star_cluster=setup.setup_star_cluster
+
+get_kernel=kernels.get_kernel
 
 #Classes
 starcluster=cluster.starcluster
