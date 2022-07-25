@@ -432,68 +432,75 @@ class starcluster(object):
 
 		pass
 
-	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
+	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, continue=False, **kwargs):
 
 		self.bridge=False
 
-		if gravity_code=='BHTree':
-			self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
-			self.gravity_code.parameters.epsilon_squared = self.softening2
-			self.gravity_code.parameters.timestep=dt
+		if continue:
+			self.channel_from_stars_to_cluster.copy()
 
-			theta=kwargs.get('theta',0.6)
-			self.gravity_code.parameters.opening_angle=theta
+		else:
 
-		elif gravity_code=='Hermite':
-			self.gravity_code=Hermite(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
-			self.gravity_code.parameters.epsilon_squared = self.softening2
-			self.gravity_code.parameters.dt_dia=dt
+			if gravity_code=='BHTree':
+				self.gravity_code=BHTree(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+				self.gravity_code.parameters.epsilon_squared = self.softening2
+				self.gravity_code.parameters.timestep=dt
 
-			dt_param=kwargs.get('dt_param',0.03)
-			self.gravity_code.parameters.dt_param=dt_param
+				theta=kwargs.get('theta',0.6)
+				self.gravity_code.parameters.opening_angle=theta
 
-		elif gravity_code=='Gadget2':
-			self.gravity_code=Gadget2(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
-			self.gravity_code.parameters.epsilon_squared = self.softening2
+			elif gravity_code=='Hermite':
+				self.gravity_code=Hermite(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+				self.gravity_code.parameters.epsilon_squared = self.softening2
+				self.gravity_code.parameters.dt_dia=dt
 
-			theta=kwargs.get('theta',0.6)
-			self.gravity_code.parameters.opening_angle=theta
+				dt_param=kwargs.get('dt_param',0.03)
+				self.gravity_code.parameters.dt_param=dt_param
 
-		elif gravity_code=='Galpy':
-			self.bridge=True
+			elif gravity_code=='Gadget2':
+				self.gravity_code=Gadget2(convert_nbody=self.converter,number_of_workers=self.number_of_workers)
+				self.gravity_code.parameters.epsilon_squared = self.softening2
 
-			pot=kwargs.get('pot')
-			self.galaxy_code=to_amuse(pot)
-			self.gravity_code=drift_without_gravity(convert_nbody=self.converter)
-			self.dtbridge=dt
+				theta=kwargs.get('theta',0.6)
+				self.gravity_code.parameters.opening_angle=theta
+
+			elif gravity_code=='Galpy':
+				self.bridge=True
+
+				pot=kwargs.get('pot')
+				self.galaxy_code=to_amuse(pot)
+				self.gravity_code=drift_without_gravity(convert_nbody=self.converter)
+				self.dtbridge=dt
+
+			self.gravity_code.particles.add_particles(self.stars)
+			if not self.bridge: self.gravity_code.commit_particles()
+
+			self.channel_from_stars_to_cluster=self.stars.new_channel_to(self.gravity_code.particles, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
+			self.channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
+
+			if self.bridge:
+				self.gravity_bridge=bridge.Bridge(use_threading=False)
+				self.gravity_bridge.add_system(self.gravity_code, (self.galaxy_code,))
+				self.gravity_bridge.timestep = self.dtbridge/2.
 
 	def evolve(self,tend=1. | units.Myr, pot = None):
 
 
 		print('TIME UNITS: ',tend.value_in(units.Myr),len(self.stars),self.stars.total_mass().value_in(units.MSun),self.criteria)
 
-
-		self.gravity_code.particles.add_particles(self.stars)
-		if not self.bridge: self.gravity_code.commit_particles()
-
-		channel_from_stars_to_cluster=self.stars.new_channel_to(self.gravity_code.particles, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
-		channel_from_cluster_to_stars=self.gravity_code.particles.new_channel_to(self.stars, attributes=["mass", "x", "y", "z", "vx", "vy", "vz"])
-
 		if self.bridge:
-			self.gravity_bridge=bridge.Bridge(use_threading=False)
-			self.gravity_bridge.add_system(self.gravity_code, (self.galaxy_code,))
-			self.gravity_bridge.timestep = self.dtbridge/2.
 			self.gravity_bridge.evolve_model(tend)
 		else:
-
 			self.gravity_code.evolve_model(tend)
 
-		channel_from_cluster_to_stars.copy()
+		self.channel_from_cluster_to_stars.copy()
 
+		"""
 		if self. bridge:
 			self.gravity_bridge.stop()
 		else:
 			self.gravity_code.stop()
+		"""
 
 		self.stars.move_to_center()
 
