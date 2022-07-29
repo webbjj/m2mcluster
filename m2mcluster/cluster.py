@@ -46,10 +46,7 @@ class starcluster(object):
 		self.observations={}
 		self.models={}
 
-		if outfile==None:
-			self.outfile=open('m2moutfile.dat','w')
-		else:
-			self.outfile=outfile
+		self.outfile==outfile:
 
 		self.delta_j_tilde=[]
 
@@ -432,11 +429,11 @@ class starcluster(object):
 
 		pass
 
-	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, continue=False, **kwargs):
+	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, docontinue=False, **kwargs):
 
 		self.bridge=False
 
-		if continue:
+		if docontinue:
 			self.channel_from_stars_to_cluster.copy()
 
 		else:
