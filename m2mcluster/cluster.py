@@ -46,7 +46,7 @@ class starcluster(object):
 		self.observations={}
 		self.models={}
 
-		self.outfile==outfile:
+		self.outfile=outfile
 
 		self.delta_j_tilde=[]
 
@@ -224,7 +224,7 @@ class starcluster(object):
 		outfile=open(outfilename,'r')
 		self.outfile=open(outfilename+'.restart','w')
 
-		for i in range(0,nsnap):
+		for i in range(0,nsnap+2):
 			line=outfile.readline()
 			self.outfile.write(line)
 

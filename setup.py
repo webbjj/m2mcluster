@@ -14,5 +14,5 @@ setuptools.setup(
     license='MIT',
     packages=["m2mcluster"],
     setup_requires=['amuse','numpy>=1.8','scipy'],
-    install_requires=['galpy','seaborn','numba==0.55.2'],
+    install_requires=['galpy','seaborn'],
     )
