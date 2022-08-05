@@ -221,6 +221,22 @@ class starcluster(object):
 
 		self.dwdt=np.zeros(len(self.w0))
 
+		if len(self.observations) > 0:
+			for j,oparam in enumerate(self.observations):
+
+				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
+
+				if param=='rho' or param=='Sigma':
+					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					norm=([None]*len(rmid))
+				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
+					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					norm=([None]*len(rmid))
+				elif ('v' in param) and ('2' in param):
+					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+
+				self.models[oparam]=mod
+
 		outfile=open(outfilename,'r')
 		self.outfile=open(outfilename+'.restart','w')
 
