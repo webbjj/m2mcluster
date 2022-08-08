@@ -37,6 +37,8 @@ class starcluster(object):
 		self.number_of_iterations=number_of_iterations
 		self.number_of_workers=number_of_workers
 
+		self.gravity_code=None
+
 		self.debug=debug
 
 		self.niteration=0
@@ -445,12 +447,14 @@ class starcluster(object):
 
 		pass
 
-	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, docontinue=False, **kwargs):
+	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
 
 		self.bridge=False
 
-		if docontinue:
+		if self.gravity_code is not None:
 			self.channel_from_stars_to_cluster.copy()
+			self.gravity_code.parameters.timestep=dt
+			if self.bridge: self.dtbridge=dt/2
 
 		else:
 
@@ -483,7 +487,7 @@ class starcluster(object):
 				pot=kwargs.get('pot')
 				self.galaxy_code=to_amuse(pot)
 				self.gravity_code=drift_without_gravity(convert_nbody=self.converter)
-				self.dtbridge=dt
+				self.dtbridge=dt/2
 
 			self.gravity_code.particles.add_particles(self.stars)
 			if not self.bridge: self.gravity_code.commit_particles()
@@ -494,7 +498,7 @@ class starcluster(object):
 			if self.bridge:
 				self.gravity_bridge=bridge.Bridge(use_threading=False)
 				self.gravity_bridge.add_system(self.gravity_code, (self.galaxy_code,))
-				self.gravity_bridge.timestep = self.dtbridge/2.
+				self.gravity_bridge.timestep = self.dtbridge
 
 	def evolve(self,tend=1. | units.Myr, pot = None):
 
