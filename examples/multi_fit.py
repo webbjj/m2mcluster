@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import os,sys
 import time
@@ -18,8 +17,8 @@ doprof=False
 #Use a galpy potential instead of an Nbody simulations
 dogalpy=False
 #Restart
-restart=True
-restartsnap=50 #automatically looks for %s.csv % str(restartnap).zfill(5) to restart from
+restart=False
+restartsnap=0 #automatically looks for %s.csv % str(restartnap).zfill(5) to restart from
 #****************************************
 
 
