@@ -93,8 +93,8 @@ class starcluster(object):
 			self.models[parameter]=mod
 			self.norms[parameter]=norm
 		else:
-			self.models[parameter]=None
-			self.norms[parameter]=None
+			self.models[parameter]=[None]
+			self.norms[parameter]=[None]
 
 		self.delta_j_tilde.append(np.zeros(len(x)))
 
@@ -145,10 +145,10 @@ class starcluster(object):
 
 				if param=='rho' or param=='Sigma':
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=None
+					norm=[None]
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
 					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=None
+					norm=[None]
 				elif ('v' in param) and ('2' in param):
 					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 

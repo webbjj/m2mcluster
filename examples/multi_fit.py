@@ -258,7 +258,7 @@ for i in range(restartsnap,cluster.number_of_iterations):
 
     #Writeout snapshots at a given frequency and update virial radius
     if cluster.niteration>=nextsnap:
-        cluster.snapout()
+        cluster.snapout(return_dwdt=True)
         nextsnap+=snapfreq
         if debug: print('START VIRIAL RADIUS',cluster.stars.total_mass().value_in(units.MSun))
         r_v=cluster.stars.virial_radius()

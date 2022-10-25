@@ -84,8 +84,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
         if norm is not None:
             divindx=norm!=0
             if debug: print('NORMALIZING MEAN SQUARE VELOCITY',dchi2[:,ndebug],norm)
-            norms=norm.reshape(len(norm),1)
-            dchi2[divindx]/=norms[divindx]
+            dchi2[divindx]/=norm.reshape(len(norm),1)[divindx]
 
             if np.sum(divindx) != len(divindx):
                 dchi2[np.invert(divindx)]=0.
