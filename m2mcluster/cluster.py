@@ -47,6 +47,7 @@ class starcluster(object):
 
 		self.observations={}
 		self.models={}
+		self.norms={}
 
 		self.outfile=outfile
 
@@ -81,17 +82,19 @@ class starcluster(object):
 		if len(self.stars) > 0:
 			if parameter=='rho' or parameter=='Sigma':
 				mod=density(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,**kwargs)
-				norm=([None]*len(x))
+				norm=None
 
 			elif ('rho' in parameter or 'Sigma' in parameter) and ('v' in parameter) and ('2' in parameter):
 				mod=density_weighted_mean_squared_velocity(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,**kwargs)
-				norm=([None]*len(x))
+				norm=None
 			elif ('v' in parameter) and ('2' in parameter):
 				mod,norm=mean_squared_velocity(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,norm=True,**kwargs)
 
 			self.models[parameter]=mod
+			self.norms[parameter]=norm
 		else:
 			self.models[parameter]=None
+			self.norms[parameter]=None
 
 		self.delta_j_tilde.append(np.zeros(len(x)))
 
@@ -142,14 +145,15 @@ class starcluster(object):
 
 				if param=='rho' or param=='Sigma':
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=([None]*len(rmid))
+					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
 					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=([None]*len(rmid))
+					norm=None
 				elif ('v' in param) and ('2' in param):
 					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
 				self.models[oparam]=mod
+				self.norms[oparam]=norm
 
 		return self.stars,self.converter
 
@@ -230,14 +234,15 @@ class starcluster(object):
 
 				if param=='rho' or param=='Sigma':
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=([None]*len(rmid))
+					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
 					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=([None]*len(rmid))
+					norm=None
 				elif ('v' in param) and ('2' in param):
 					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
 				self.models[oparam]=mod
+				self.norms[oparam]=norm
 
 		outfile=open(outfilename,'r')
 		self.outfile=open(outfilename+'.restart','w')
@@ -351,6 +356,8 @@ class starcluster(object):
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)
 
+		self.update_models()
+
 	def resample(self,mindx,nbin=50,bintype='num',rscatter=0.,vscatter=0.):
 
 		w0bar=np.mean(self.w0)
@@ -447,6 +454,36 @@ class starcluster(object):
 
 		pass
 
+	def update_models(self,return_norm=False):
+
+		models={}
+		norms={}
+
+	    for j,oparam in enumerate(self.observations):
+
+	        rlower,rmid,rupper,obs,param,ndim,sigma,kernel=observations[oparam]
+
+	        if param=='rho' or param=='Sigma':
+	            mod=density(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+	            norm=None
+	        elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
+	            mod=density_weighted_mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+	            norm=None
+	        elif ('v' in param) and ('2' in param):
+	            mod,norm=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+
+	        models[oparam]=mod
+	        norms[oparam]=norm
+
+        self.models=models
+        self.norms=norm
+
+        if return_norm:
+        	return self.models,self.norms
+        else:
+        	return self.models
+
+
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
 
 		self.bridge=False
@@ -524,18 +561,21 @@ class starcluster(object):
 		return self.stars
 
 	def evaluate(self,epsilon=10.0**-4.,mu=1.,alpha=1.,**kwargs):
-			
 
+		if kwargs.get("update_models",False):
+			self.update_models()
+		
 		if kwargs.get('return_dwdt',False):
-			self.stars,self.models,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
+			self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
 		else:
-			self.stars,self.models,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
+			self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
 			self.dwdt=np.zeros(len(self.stars))
+
 
 		self.niteration+=1
 
 
-		return self.stars,self.models,self.criteria,self.delta_j_tilde,self.dwdt
+		return self.stars,self.criteria,self.delta_j_tilde,self.dwdt
 
 	def xy_plot(self,filename=None):
 		positions_plot(self.stars,filename=filename)

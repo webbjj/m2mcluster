@@ -12,12 +12,9 @@ from scipy.stats import chisquare
 
 from amuse.ext.LagrangianRadii import LagrangianRadii
 
-def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
+def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
     
     ndebug=kwargs.get('ndebug',1)
-
-    #array for models
-    models={}
 
     #Initialize rate of change in weights within each radial bin to be zero
     dwdt=np.zeros(len(stars))
@@ -30,20 +27,14 @@ def made_to_measure(stars,observations,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=
     #Sum over Chi2 contributions
     chi_squared=0.
 
+
+
     for j,oparam in enumerate(observations):
 
         rlower,rmid,rupper,obs,param,ndim,sigma,kernel=observations[oparam]
 
-        if param=='rho' or param=='Sigma':
-            mod=density(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-            norm=None
-        elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
-            mod=density_weighted_mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-            norm=None
-        elif ('v' in param) and ('2' in param):
-            mod,norm=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
-
-        models[oparam]=mod
+        mod=models[oparam]
+        norm=norms[oparam]
 
     #Calculate delta_j,velocities (if necessary) and radii for each observable
 

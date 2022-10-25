@@ -13,7 +13,7 @@ from amuse.datamodel import Particles
 
 #**********Initial Options***************
 #Read in profiles directly
-doprof=False
+doprof=True
 #Use a galpy potential instead of an Nbody simulations
 dogalpy=False
 #Restart
@@ -27,7 +27,7 @@ restartsnap=0 #automatically looks for %s.csv % str(restartnap).zfill(5) to rest
 #Set Kernel type and M2M parameters
 kernel='gaussian'
 
-epsilon= 0.5
+epsilon= 0.001
 mu=0.0
 alpha=0.0
 
@@ -38,8 +38,8 @@ mmax=2.0 | units.MSun
 mtot = None
 
 #Set number of iterations and output frequency
-niterations=100
-snapfreq=1
+niterations=5103
+snapfreq=100
 nextsnap=0
 
 #**********Set observables**********
@@ -67,8 +67,8 @@ if dogalpy:
 
 #**********Debugging***************
 timing=True
-doplots=True
-debug=False
+doplots=False
+debug=True
 
 
 #**********Initial Particle Datasets*****
@@ -160,7 +160,7 @@ elif doprof:
 
 #Initialize a model star cluster with an initial guess close to the observed cluster's properties
 if os.path.isfile(omodname) and not restart:
-    cluster.initialize_star_cluster(filename=omodname)
+    cluster.initialize_star_cluster(filename=omodname, softening=softening)
 elif not restart:
     cluster.initialize_star_cluster(N=N, Mcluster = Mcluster, Rcluster = Rcluster, softening = softening, W0=W0,imf='single',mmin=1. | units.MSun)
 elif restart:
@@ -206,6 +206,7 @@ for i in range(restartsnap,cluster.number_of_iterations):
     if timing: dttime=time.time()
     #Initialize a new N-body simulation ever time step. 
     #In this example I use 1% of the cluster's dynamical time for the integration timeste
+    cluster.gravity_code=None
     if dogalpy:
         cluster.initialize_gravity_code('Galpy', dt=tdynrat*cluster.tdyn, theta=0.6, pot=pot)
     else:
@@ -215,18 +216,31 @@ for i in range(restartsnap,cluster.number_of_iterations):
     if timing: dttime=time.time()
     
     #Evolve the model cluster forward for tdynrat percent of its dynamical time
-    tnext=tdynrat*cluster.tdyn*(cluster.niteration+1-restartsnap)
+    #tnext=tdynrat*cluster.tdyn*(cluster.niteration+1-restartsnap)
+    tnext=tdynrat*cluster.tdyn
+    if debug: print('TDYN: ',tdynrat,cluster.tdyn)
+    if debug: print('MOD1: ',cluster.models['Sigma'])
     cluster.evolve(tend=tnext)
-    
+    cluster.gravity_code.stop() 
+    if debug: print('MOD2: ',cluster.models['Sigma'])
+
     if timing: print('evolve',time.time()-dttime)
     if timing: dttime=time.time()
     
     #Run the M2M algorithm, which will adjust all of the stellar masses based on kernel function
     cluster.evaluate(epsilon=epsilon,mu=mu,alpha=alpha)
+    if debug: print('MOD3: ',cluster.models['Sigma'])
     #cluster.niteration+=1 
     if timing: print('evaluate',time.time()-dttime)
-    if timing: dttime=time.time()
     
+    #Centre the star cluster and find determine Nbody conversion scales for next integration
+    if debug: print('REINITIALIZE: ',np.sum(cluster.stars.mass.value_in(units.MSun)<mmin.value_in(units.MSun)),np.sum(cluster.stars.mass.value_in(units.MSun)>mmax.value_in(units.MSun)))
+    if timing: dttime=time.time()
+    cluster.reinitialize_star_cluster(mmin= mmin, mmax=mmax, mtot=mtot, rmax=rmax,rv=r_v)
+
+    if timing: print('reinitialize_star_cluster',time.time()-dttime)
+    if timing: dttime=time.time()
+
     #Write profiles and chi^2 to outfile
     cluster.writeout()
     
@@ -251,13 +265,6 @@ for i in range(restartsnap,cluster.number_of_iterations):
         if debug: print('VIRIAL RADIUS = ',r_v,nextsnap,nextsnap%100)
 
         if timing: print('snapout',time.time()-dttime)
-
-    #Centre the star cluster and find determine Nbody conversion scales for next integration
-    if debug: print('REINITIALIZE: ',np.sum(cluster.stars.mass.value_in(units.MSun)<mmin.value_in(units.MSun)),np.sum(cluster.stars.mass.value_in(units.MSun)>mmax.value_in(units.MSun)))
-    if timing: dttime=time.time()
-    cluster.reinitialize_star_cluster(mmin= mmin, mmax=mmax, mtot=mtot, rmax=rmax,rv=r_v)
-
-    if timing: print('reinitialize_star_cluster',time.time()-dttime)
 
     sys.stdout.flush()
  
