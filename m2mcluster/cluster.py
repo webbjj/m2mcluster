@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-#import matplotlib
-#matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 
 import numpy
 from amuse.lab import *
@@ -93,8 +93,8 @@ class starcluster(object):
 			self.models[parameter]=mod
 			self.norms[parameter]=norm
 		else:
-			self.models[parameter]=[None]
-			self.norms[parameter]=[None]
+			self.models[parameter]=None
+			self.norms[parameter]=None
 
 		self.delta_j_tilde.append(np.zeros(len(x)))
 
@@ -145,10 +145,10 @@ class starcluster(object):
 
 				if param=='rho' or param=='Sigma':
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=[None]
+					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
 					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-					norm=[None]
+					norm=None
 				elif ('v' in param) and ('2' in param):
 					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
@@ -454,23 +454,23 @@ class starcluster(object):
 
 		pass
 
-	def update_models(self,return_norm=False):
+	def update_models(self,return_norm=False,**kwargs):
 
 		models={}
 		norms={}
 
 		for j,oparam in enumerate(self.observations):
 
-			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=observations[oparam]
+			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
 			if param=='rho' or param=='Sigma':
-				mod=density(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+				mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 				norm=None
 			elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
-				mod=density_weighted_mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+				mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 				norm=None
 			elif ('v' in param) and ('2' in param):
-				mod,norm=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+				mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
 			models[oparam]=mod
 			norms[oparam]=norm
