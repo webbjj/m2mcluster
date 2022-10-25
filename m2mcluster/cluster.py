@@ -459,29 +459,29 @@ class starcluster(object):
 		models={}
 		norms={}
 
-	    for j,oparam in enumerate(self.observations):
+		for j,oparam in enumerate(self.observations):
 
-	        rlower,rmid,rupper,obs,param,ndim,sigma,kernel=observations[oparam]
+			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=observations[oparam]
 
-	        if param=='rho' or param=='Sigma':
-	            mod=density(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-	            norm=None
-	        elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
-	            mod=density_weighted_mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
-	            norm=None
-	        elif ('v' in param) and ('2' in param):
-	            mod,norm=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+			if param=='rho' or param=='Sigma':
+				mod=density(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+				norm=None
+			elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
+				mod=density_weighted_mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+				norm=None
+			elif ('v' in param) and ('2' in param):
+				mod,norm=mean_squared_velocity(stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
-	        models[oparam]=mod
-	        norms[oparam]=norm
+			models[oparam]=mod
+			norms[oparam]=norm
 
-        self.models=models
-        self.norms=norm
+		self.models=models
+		self.norms=norms
 
-        if return_norm:
-        	return self.models,self.norms
-        else:
-        	return self.models
+		if return_norm:
+			return self.models,self.norms
+		else:
+			return self.models
 
 
 	def initialize_gravity_code(self,gravity_code, dt=0.1 | units.Myr, **kwargs):
@@ -565,13 +565,8 @@ class starcluster(object):
 		if kwargs.get("update_models",False):
 			self.update_models()
 		
-		if kwargs.get('return_dwdt',False):
-			self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
-		else:
-			self.stars,self.criteria, self.delta_j_tilde=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
-			self.dwdt=np.zeros(len(self.stars))
 
-
+		self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
 		self.niteration+=1
 
 

@@ -111,10 +111,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
     stars.mass += step*dwdt | units.MSun
 
 
-    if kwargs.get('return_dwdt',False):
-        return stars,models,chi_squared,delta_j_tilde,dwdt
-    else:
-        return stars,models,chi_squared,delta_j_tilde
+    return stars,models,chi_squared,delta_j_tilde,dwdt
 
 def get_dchi2(delta_j_tilde,K_j,sigma_j,v2=None,dv=None):
     

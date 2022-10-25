@@ -7,7 +7,6 @@ from . import setup
 #
 #Functions
 #
-made_to_measure=algorithm.just_measure
 made_to_measure=algorithm.made_to_measure
 get_dchi2=algorithm.get_dchi2
 
