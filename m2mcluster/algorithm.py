@@ -37,7 +37,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
         norm=norms[oparam]
 
     #Calculate delta_j,velocities (if necessary) and radii for each observable
-
+        print('LEN MOD, LEN OBS, PARAM')
         print(len(mod),len(obs),param)
         delta_j=(mod-obs)
 
@@ -56,7 +56,9 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
 
 
         #Bovy Equation 22/23
-        if debug: print(alpha,delta_j_tilde[j],delta_j,step)
+        if debug:
+            print('ALPHA,DELTA_J_TILDE,DELTA_J,STEP')
+            print(alpha,delta_j_tilde[j],delta_j,step)
         if alpha==0.:
             delta_j_tilde[j]=delta_j
         else:
@@ -83,7 +85,6 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
 
         if norm is not None:
             divindx=norm!=0
-            if debug: print('NORMALIZING MEAN SQUARE VELOCITY',dchi2[:,ndebug],norm)
             normrs=norm.reshape(len(norm),1)
             dchi2[divindx]/=normrs[divindx]
 
@@ -96,6 +97,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
         dchisum=np.sum(dchi2,axis=0)/2.
 
         if debug: 
+            print('NDEBUG,R,DELTA_J_TILDE,K_J,SIGMA,v2,dv,DCHISUM')
             if dv is None:
                 if v2 is None:
                     print(ndebug,r[ndebug],delta_j_tilde[j],K_j[:,ndebug],sigma,None,None,dchisum[ndebug])

@@ -47,6 +47,36 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
             K_j=K_j*(1./vol.reshape(len(area),1))
         elif ndim==2 and knorm:
             K_j=K_j*(1./area.reshape(len(area),1))
+
+    elif kernel == 'loggaussian':
+
+        vol=(4./3.)*np.pi*(rupper**4.-rlower**4.)
+        area=np.pi*(rupper**3.-rlower**3.)
+
+        lrupper=np.log10(rupper)
+        lrmid=np.log10(rmid)
+        lrlower=np.log10(rlower)
+        lr=np.log10(r)
+
+        #D. Syer & S. Tremaine 1996 - Section 2.2 - use bin centre as mean of Gaussian and sigma of 1/2 bin width
+        lksigma=kwargs.get('ksigma',(lrupper-lrlower)/2.)
+
+        lrs=lr.reshape(len(lr),1)
+        lrmean_args=np.argmin(np.fabs(lrs-lrmid),axis=1)
+        lsig=lksigma[lrmean_args]
+        lrmean=lrmid[lrmean_args]
+        lrmids=np.repeat(lrmid,len(lsig)).reshape(len(lrmid),len(lr))
+
+        K_j=gaussian_kernel(lrmids,lrmean,lsig)
+        
+        zargs=np.logical_or(lr<lrlower[0],lr>lrupper[-1])
+        ids=np.arange(0,len(lr))
+        K_j[:,ids[zargs]]=0
+
+        if ndim==3 and knorm:
+            K_j=K_j*(1./vol.reshape(len(area),1))
+        elif ndim==2 and knorm:
+            K_j=K_j*(1./area.reshape(len(area),1))
             
     return K_j
 

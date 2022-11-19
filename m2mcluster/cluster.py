@@ -1,7 +1,7 @@
 from __future__ import print_function
 
-import matplotlib
-matplotlib.use('Agg')
+#import matplotlib
+#matplotlib.use('Agg')
 
 import numpy
 from amuse.lab import *
@@ -157,9 +157,13 @@ class starcluster(object):
 
 		return self.stars,self.converter
 
-	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard',**kwargs):
+	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard',restartfilename=None,**kwargs):
 
-		filename='%s.csv' % str(nsnap).zfill(5)
+
+		if restartfilename is None:
+			filename='%s.csv' % str(nsnap).zfill(5)
+		else:
+			filename=restartfilename
 
 		self.niteration=nsnap
 
@@ -172,7 +176,7 @@ class starcluster(object):
 			mass,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)
 		elif fmt=='dwdt':
-			mass,rad,vx,vy,vz,x,y,z,ids,dwdt=data.astype(float)
+			mass,vx,vy,vz,x,y,z,ids,dwdt=data.astype(float)
 		elif fmt=='test':
 			mass,rad,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)

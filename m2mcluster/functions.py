@@ -30,8 +30,6 @@ def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=2
 
     rho=np.sum(particles.mass.value_in(units.MSun)*K_j,axis=1)
 
-    print('DENDS DEBUG: ',np.amin(particles.mass.value_in(units.MSun)),np.amax(particles.mass.value_in(units.MSun)))
-
     if bins:
         return rlower,rmid,rupper,rho
     else:
