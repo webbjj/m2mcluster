@@ -33,7 +33,7 @@ def density_profile(stars,observations,models=None,nbin=20,bintype='num',filenam
 
     for oparam in observations:
 
-        if 'rho' == oparam or 'Sigma' == oparam:
+        if ('rho' in oparam or 'Sigma' in oparam) and ('v' not in oparam):
             rlower,rmid,rupper,rho, param, ndim, sigma, rhokernel=observations[oparam]
 
             vol=(4./3.)*np.pi*(rupper**3.-rlower**3.)

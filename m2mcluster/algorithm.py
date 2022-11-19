@@ -41,7 +41,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
         print(len(mod),len(obs),param)
         delta_j=(mod-obs)
 
-        if param=='rho' or param=='Sigma':
+        if ('rho' in param or 'Sigma' in param) and ('v' not in param):
             v2=None
         else:
             v2=(get_v2(stars,param,ndim,))
@@ -69,7 +69,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
         #Find dwdt for each star
 
         K_j=(get_kernel(r,rlower,rmid,rupper,kernel=kernel,ndim=ndim,**kwargs))
-        if param=='rho' or param=='Sigma':
+        if ('rho' in param or 'Sigma' in param) and ('v' not in param):
             dv=None
 
         elif 'v' in param and '2' in param and 'rho' not in param and 'Sigma' not in param:

@@ -33,7 +33,7 @@ from galpy.potential import to_amuse
 
 class starcluster(object):
 
-	def __init__(self, kernel='identifier', calc_step=False,number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
+	def __init__(self, calc_step=False,number_of_iterations=100, outfile=None, number_of_workers=1, debug=False,*kwargs):
 		self.number_of_iterations=number_of_iterations
 		self.number_of_workers=number_of_workers
 
@@ -80,7 +80,7 @@ class starcluster(object):
 		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
 
 		if len(self.stars) > 0:
-			if parameter=='rho' or parameter=='Sigma':
+        	if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 				mod=density(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,**kwargs)
 				norm=None
 
@@ -143,7 +143,7 @@ class starcluster(object):
 
 				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
-				if param=='rho' or param=='Sigma':
+        		if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
@@ -236,7 +236,7 @@ class starcluster(object):
 
 				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
-				if param=='rho' or param=='Sigma':
+        		if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
@@ -467,7 +467,7 @@ class starcluster(object):
 
 			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
-			if param=='rho' or param=='Sigma':
+        	if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 				mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 				norm=None
 			elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
