@@ -23,6 +23,9 @@ def density(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,nbin=2
             rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
         elif bintype =='fix':
             rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        elif bintype =='lfix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin,steptype='log')
+
     else:
         nbin=len(rlower)
 
@@ -52,6 +55,8 @@ def mean_velocity(particles,rlower=None,rmid=None,rupper=None,param=None,ndim=3,
             rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
         elif bintype =='fix':
             rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        elif bintype =='lfix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin,steptype='log')
     else:
         nbin=len(rlower)
 
@@ -97,6 +102,8 @@ def mean_squared_velocity(particles,rlower=None,rmid=None,rupper=None,param=None
             rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
         elif bintype =='fix':
             rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        elif bintype =='lfix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin,steptype='log')
     else:
         nbin=len(rlower)
 
@@ -146,6 +153,8 @@ def density_weighted_mean_squared_velocity(particles,rlower=None,rmid=None,ruppe
             rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
         elif bintype =='fix':
             rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
+        elif bintype =='lfix':
+            rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin,steptype='log')
     else:
         nbin=len(rlower)
 

@@ -80,7 +80,7 @@ class starcluster(object):
 		self.observations[parameter]=[xlower,x,xupper,y,parameter,ndim,sigma,kernel]
 
 		if len(self.stars) > 0:
-        	if ('rho' in param or 'Sigma' in param) and ('v' not in param):
+			if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 				mod=density(self.stars,xlower,x,xupper,parameter,ndim,kernel=kernel,**kwargs)
 				norm=None
 
@@ -143,7 +143,7 @@ class starcluster(object):
 
 				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
-        		if ('rho' in param or 'Sigma' in param) and ('v' not in param):
+				if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
@@ -236,7 +236,7 @@ class starcluster(object):
 
 				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
-        		if ('rho' in param or 'Sigma' in param) and ('v' not in param):
+				if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
@@ -467,7 +467,7 @@ class starcluster(object):
 
 			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
-        	if ('rho' in param or 'Sigma' in param) and ('v' not in param):
+			if ('rho' in param or 'Sigma' in param) and ('v' not in param):
 				mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 				norm=None
 			elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):

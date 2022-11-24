@@ -22,7 +22,7 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
         
         #D. Syer & S. Tremaine 1996 - Section 2.2, set K_j to 1/vol or 0, such that K_j/Z_j = 1 or 0
         if ndim==3 and knorm:
-            K_j=K_j*(1./vol.reshape(len(area),1))
+            K_j=K_j*(1./vol.reshape(len(vol),1))
         elif ndim==2 and knorm:
             K_j=K_j*(1./area.reshape(len(area),1))
 
@@ -44,19 +44,29 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
         K_j[:,ids[zargs]]=0
 
         if ndim==3 and knorm:
-            K_j=K_j*(1./vol.reshape(len(area),1))
+            K_j=K_j*(1./vol.reshape(len(vol),1))
         elif ndim==2 and knorm:
             K_j=K_j*(1./area.reshape(len(area),1))
+        elif ndim==3 and not knorm:
+
+            vol=4.*np.pi*(np.tile(r,len(vol)).reshape((len(vol), len(r))))**2.
+            K_j=K_j*(1./vol)
+
 
     elif kernel == 'loggaussian':
 
-        vol=(4./3.)*np.pi*(rupper**4.-rlower**4.)
-        area=np.pi*(rupper**3.-rlower**3.)
+        vol=(4./3.)*np.pi*(rupper**3-rlower**3.)
+        area=np.pi*(rupper**2.-rlower**2.)
 
-        lrupper=np.log10(rupper)
-        lrmid=np.log10(rmid)
-        lrlower=np.log10(rlower)
-        lr=np.log10(r)
+        #lrupper=rupper #np.log10(rupper)
+        #lrlower=rlower #np.log10(rlower)
+        #lrmid=(lrupper+lrlower)/2.
+        #lr=r #np.log10(r)
+
+        lrupper=np.log(rupper)
+        lrlower=np.log(rlower)
+        lrmid=(lrupper+lrlower)/2.
+        lr=np.log(r)
 
         #D. Syer & S. Tremaine 1996 - Section 2.2 - use bin centre as mean of Gaussian and sigma of 1/2 bin width
         lksigma=kwargs.get('ksigma',(lrupper-lrlower)/2.)
@@ -74,10 +84,10 @@ def get_kernel(r,rlower,rmid,rupper,kernel='identifier',ndim=3,**kwargs):
         K_j[:,ids[zargs]]=0
 
         if ndim==3 and knorm:
-            K_j=K_j*(1./vol.reshape(len(area),1))
+            K_j=K_j*(1./vol.reshape(len(vol),1))
         elif ndim==2 and knorm:
             K_j=K_j*(1./area.reshape(len(area),1))
-            
+          
     return K_j
 
 def gaussian_kernel(r,rmean,sigma):
