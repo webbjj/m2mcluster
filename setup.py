@@ -13,6 +13,6 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     license='MIT',
     packages=["m2mcluster"],
-    setup_requires=['amuse','numpy>=1.8','scipy'],
+    setup_requires=['amuse-framework','numpy>=1.8','scipy'],
     install_requires=['galpy','seaborn'],
     )
