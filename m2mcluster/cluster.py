@@ -132,6 +132,7 @@ class starcluster(object):
 			self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha, **kwargs)
 			self.kw=np.ones(N)
 
+		self.bright=self.kw<10
 
 		self.ids=np.arange(0,len(self.stars),1)
 		self.ntot=len(self.stars)
@@ -296,6 +297,8 @@ class starcluster(object):
 				self.w0=self.w0[np.invert(indx)]
 				self.ids=self.ids[np.invert(indx)]
 				self.dwdt=self.dwdt[np.invert(indx)]
+				self.kw=self.kw[np.invert(indx)]
+
 
 			if self.debug:
 				print('Remove %i stars beyond rmax' % np.sum(indx))
@@ -310,6 +313,7 @@ class starcluster(object):
 				self.w0=self.w0[np.invert(indx)]
 				self.ids=self.ids[np.invert(indx)]
 				self.dwdt=self.dwdt[np.invert(indx)]
+				self.kw=self.kw[np.invert(indx)]
 
 			if self.debug:
 				print('Remove %i low mass stars' % np.sum(indx))
@@ -349,6 +353,7 @@ class starcluster(object):
 				self.w0=self.w0[np.invert(mindx)]
 				self.ids=self.ids[np.invert(mindx)]
 				self.dwdt=self.dwdt[np.invert(mindx)]
+				self.kw=self.kw[np.invert(mindx)]
 
 
 				self.stars.add_particles(new_stars)
@@ -356,6 +361,7 @@ class starcluster(object):
 				self.ids=np.append(self.ids,np.arange(self.ntot+1,self.ntot+1+len(new_stars),1))
 				self.ntot+=len(new_stars)
 				self.dwdt=np.append(self.dwdt,np.zeros(len(new_stars)))
+				self.kw=np.append(self.kw,np.zeros(len(new_stars)))
 
 				if self.debug:
 					print('N = ',len(self.stars))
@@ -636,6 +642,7 @@ class starcluster(object):
 		vy=self.stars.vy.value_in(units.kms)
 		vz=self.stars.vz.value_in(units.kms)
 		ids=self.ids
+		kw=self.kw
 
 		if fmt=='mxv':
 			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,x,y,z,vx,vy,vz,ids,kw,self.dwdt]))
