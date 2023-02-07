@@ -12,8 +12,13 @@ from scipy.stats import chisquare
 
 from amuse.ext.LagrangianRadii import LagrangianRadii
 
-def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,debug=False,**kwargs,):
+def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,alpha=1.,step=1.,delta_j_tilde=None,kw=None,debug=False,**kwargs,):
     
+    if kw is None:
+        kw=np.ones(len(stars))
+
+    kws=kw<10
+
     ndebug=kwargs.get('ndebug',1)
 
     #Initialize rate of change in weights within each radial bin to be zero
@@ -26,8 +31,6 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
 
     #Sum over Chi2 contributions
     chi_squared=0.
-
-
 
     for j,oparam in enumerate(observations):
 
@@ -110,7 +113,7 @@ def made_to_measure(stars,observations,models,norms,w0,epsilon=10.0**-4.,mu=1.,a
 
         if debug: print('DWDT: ',-epsilon*stars[ndebug].mass.value_in(units.MSun)*dchisum[ndebug],dwdt[ndebug])
 
-    stars.mass += step*dwdt | units.MSun
+    stars.mass[kws] += step*dwdt[kws] | units.MSun
 
 
     return stars,chi_squared,delta_j_tilde,dwdt

@@ -56,6 +56,7 @@ class starcluster(object):
 		self.calc_step=calc_step
 		self.step=1.
 		self.stars=[]
+		self.kw=[]
 
 
 	def add_observable(self,xlower,x,xupper,y,parameter='density',ndim=3,sigma=None,kernel='identifier',extend_outer=False):
@@ -98,10 +99,18 @@ class starcluster(object):
 
 		self.delta_j_tilde.append(np.zeros(len(x)))
 
-	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename = None, **kwargs):
+	def initialize_star_cluster(self,N=100, Mcluster=100.0 | units.MSun, Rcluster= 1.0 | units.parsec, softening=0.1 | units.parsec, W0=0.,imf='kroupa', mmin=0.08 | units.MSun, mmax=1.4 | units.MSun, alpha=-1.3, filename = None, remnants=False, **kwargs):
 
 		if filename is not None:
-			m,x,y,z,vx,vy,vz=np.loadtxt(filename,unpack=True)
+			if remnants:
+				m,x,y,z,vx,vy,vz,kw=np.loadtxt(filename,unpack=True)
+				self.kw=kw
+			else:	
+				m,x,y,z,vx,vy,vz=np.loadtxt(filename,unpack=True)
+				self.kw=np.ones(len(x))
+
+			self.bright=self.kw<10
+
 			self.stars=Particles(len(x))
 			self.stars.mass = m | units.MSun
 			self.stars.x=x | units.parsec
@@ -144,20 +153,20 @@ class starcluster(object):
 				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
 				if ('rho' in param or 'Sigma' in param) and ('v' not in param):
-					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					mod=density(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
-					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					mod=density_weighted_mean_squared_velocity(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('v' in param) and ('2' in param):
-					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+					mod,norm=mean_squared_velocity(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
 				self.models[oparam]=mod
 				self.norms[oparam]=norm
 
 		return self.stars,self.converter
 
-	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard',restartfilename=None,**kwargs):
+	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard',restartfilename=None,remnants=False,**kwargs):
 
 
 		if restartfilename is None:
@@ -180,8 +189,17 @@ class starcluster(object):
 		elif fmt=='test':
 			mass,rad,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)
+		elif remnants:
+			mass,vx,vy,vz,x,y,z,kw=data.astype(float)
 		else:
 			mass,vx,vy,vz,x,y,z,ids=data.astype(float)
+
+		if remnants:
+			self.kw=kw
+		else:
+			self.kw=np.ones(len(x))
+
+		self.bright=self.kw<10
 
 
 
@@ -237,13 +255,13 @@ class starcluster(object):
 				rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
 				if ('rho' in param or 'Sigma' in param) and ('v' not in param):
-					mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					mod=density(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
-					mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+					mod=density_weighted_mean_squared_velocity(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 					norm=None
 				elif ('v' in param) and ('2' in param):
-					mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+					mod,norm=mean_squared_velocity(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
 				self.models[oparam]=mod
 				self.norms[oparam]=norm
@@ -468,13 +486,13 @@ class starcluster(object):
 			rlower,rmid,rupper,obs,param,ndim,sigma,kernel=self.observations[oparam]
 
 			if ('rho' in param or 'Sigma' in param) and ('v' not in param):
-				mod=density(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+				mod=density(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 				norm=None
 			elif ('rho' in param or 'Sigma' in param) and ('v' in param) and ('2' in param):
-				mod=density_weighted_mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
+				mod=density_weighted_mean_squared_velocity(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,**kwargs)
 				norm=None
 			elif ('v' in param) and ('2' in param):
-				mod,norm=mean_squared_velocity(self.stars,rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
+				mod,norm=mean_squared_velocity(self.stars[self.bright],rlower,rmid,rupper,param,ndim,kernel=kernel,norm=True,**kwargs)
 
 			models[oparam]=mod
 			norms[oparam]=norm
@@ -568,28 +586,27 @@ class starcluster(object):
 
 		if kwargs.get("update_models",False):
 			self.update_models()
-		
 
-		self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,debug=self.debug,**kwargs)
+		self.stars,self.criteria, self.delta_j_tilde,self.dwdt=made_to_measure(self.stars,self.observations,self.models,self.norms,self.w0,epsilon=epsilon,mu=mu,alpha=alpha,step=self.step,delta_j_tilde=self.delta_j_tilde,kw=self.kw,debug=self.debug,**kwargs)
 		self.niteration+=1
 
 
 		return self.stars,self.criteria,self.delta_j_tilde,self.dwdt
 
 	def xy_plot(self,filename=None):
-		positions_plot(self.stars,filename=filename)
+		positions_plot(self.stars[self.bright],filename=filename)
 
 	def rho_prof(self,filename=None):
-	    density_profile(self.stars, self.observations,self.models,filename=filename)
+	    density_profile(self.stars[self.bright], self.observations,self.models,filename=filename)
 
 	def v_prof(self,filename=None):
-		mean_velocity_profile(self.stars, self.observations,self.models,filename=filename)
+		mean_velocity_profile(self.stars[self.bright], self.observations,self.models,filename=filename)
 
 	def v2_prof(self,filename=None):
-		mean_squared_velocity_profile(self.stars, self.observations,self.models,filename=filename)
+		mean_squared_velocity_profile(self.stars[self.bright], self.observations,self.models,filename=filename)
 
 	def rhov2_prof(self,filename=None):
-		density_weighted_mean_squared_velocity_profile(self.stars, self.observations,self.models,filename=filename)
+		density_weighted_mean_squared_velocity_profile(self.stars[self.bright], self.observations,self.models,filename=filename)
 
 	def writeout(self,outfile=None):
 
@@ -655,7 +672,7 @@ class starcluster(object):
 		outfile.write('\n')
 
 
-	def snapout(self, return_dwdt=False):
+	def snapout(self, return_dwdt=False, remnants=False):
 
 		m=self.stars.mass.value_in(units.MSun)
 		x=self.stars.x.value_in(units.parsec)
@@ -666,11 +683,16 @@ class starcluster(object):
 		vz=self.stars.vz.value_in(units.kms)
 		ids=self.ids
 
+		if remnants:
+			kw=self.kw
+		else:
+			kw=np.ones(len(x))
+
 		if return_dwdt:
-			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids,self.dwdt]))
+			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids,kw,self.dwdt]))
 
 		else:
-			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids]))
+			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids,kw]))
 
 		#write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
 
