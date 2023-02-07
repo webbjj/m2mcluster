@@ -130,6 +130,7 @@ class starcluster(object):
 		else:
 
 			self.stars,self.converter=setup_star_cluster(N=N, Mcluster= Mcluster, Rcluster= Rcluster, softening=softening, W0=W0,imf=imf, mmin=mmin, mmax=mmax, alpha=alpha, **kwargs)
+			self.kw=np.ones(N)
 
 
 		self.ids=np.arange(0,len(self.stars),1)
@@ -166,7 +167,7 @@ class starcluster(object):
 
 		return self.stars,self.converter
 
-	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='standard',restartfilename=None,remnants=False,**kwargs):
+	def restart_star_cluster(self,nsnap,w0,outfilename,softening=0.1 | units.parsec, unit='msunpckms',fmt='mxv',restartfilename=None,**kwargs):
 
 
 		if restartfilename is None:
@@ -181,27 +182,27 @@ class starcluster(object):
 		except:
 			data=np.loadtxt(filename,unpack=True,**kwargs)
 
-		if fmt=='original':
+		#Primary format
+		if fmt=='mxv':
+			m,x,y,z,vx,vy,vz,ids,kw,dwdt=data.astype(float)
+			self.kw=kw
+		#Legacy
+		elif fmt=='original':
 			mass,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)
+			self.kw=np.ones(len(x))
 		elif fmt=='dwdt':
 			mass,vx,vy,vz,x,y,z,ids,dwdt=data.astype(float)
+			self.kw=np.ones(len(x))
 		elif fmt=='test':
 			mass,rad,vx,vy,vz,x,y,z=data.astype(float)
 			ids=np.arange(0,len(x),1)
-		elif remnants:
-			mass,vx,vy,vz,x,y,z,kw=data.astype(float)
+			self.kw=np.ones(len(x))
 		else:
 			mass,vx,vy,vz,x,y,z,ids=data.astype(float)
-
-		if remnants:
-			self.kw=kw
-		else:
 			self.kw=np.ones(len(x))
 
 		self.bright=self.kw<10
-
-
 
 		if unit=='msunpckms':
 			self.stars=Particles(len(x))
@@ -378,6 +379,8 @@ class starcluster(object):
 		if self.calc_step:
 			self.step=self.tdyn.value_in(units.Myr)
 
+
+		self.bright=self.kw<10
 		self.update_models()
 
 	def resample(self,mindx,nbin=50,bintype='num',rscatter=0.,vscatter=0.):
@@ -426,55 +429,7 @@ class starcluster(object):
 			vynew=np.append(vynew,vyn)
 			vznew=np.append(vznew,vzn)				
 
-
-		"""
-
-		if bintype=='num':
-		    rlower, rmid, rupper, rhist=nbinmaker(r,nbin=nbin)
-		elif bintype =='fix':
-		    rlower, rmid, rupper, rhist=binmaker(r,nbin=nbin)
-
-		for i in range(0,len(rmid)):
-			rindx=(r>=rlower[i])*(r<rupper[i])
-
-			if np.sum(rindx*mindx)>0:
-
-				mtot=np.sum(self.stars.mass[rindx*mindx].value_in(units.MSun))
-				ntot=int(np.ceil(mtot/w0bar))
-
-				if self.debug:
-					print('RESAMPLE: ',rmid[i],np.sum(rindx*mindx),ntot,mtot)
-
-				x,y,z=self.stars.x[rindx].value_in(units.parsec),self.stars.y[rindx].value_in(units.parsec),self.stars.z[rindx].value_in(units.parsec)
-				vx,vy,vz=self.stars.vx[rindx].value_in(units.kms),self.stars.vy[rindx].value_in(units.kms),self.stars.vz[rindx].value_in(units.kms)
-
-				rad,phi,theta,vr,vp,vt=cart_to_sphere(x,y,z,vx,vy,vz)
-
-				rn=np.random.uniform(rlower[i],rupper[i],ntot)
-				phin=2.0*np.pi*np.random.rand(ntot)
-				thetan=np.arccos(1.0-2.0*np.random.rand(ntot))
-			
-				vrn=np.random.normal(np.mean(vr),np.std(vr),ntot)
-				vpn=np.random.normal(np.mean(vp),np.std(vp),ntot)
-				vtn=np.random.normal(np.mean(vt),np.std(vt),ntot)
-
-				xn,yn,zn,vxn,vyn,vzn = sphere_to_cart(rn,phin,thetan,vrn,vpn,vtn)
-
-				mnew=np.append(mnew,np.ones(ntot)*w0bar)
-				xnew=np.append(xnew,xn)
-				ynew=np.append(ynew,yn)
-				znew=np.append(znew,zn)
-
-				vxnew=np.append(vxnew,vxn)
-				vynew=np.append(vynew,vyn)
-				vznew=np.append(vznew,vzn)
-		"""
-
 		return mnew,xnew,ynew,znew,vxnew,vynew,vznew
-
-
-
-		pass
 
 	def update_models(self,return_norm=False,**kwargs):
 
@@ -671,8 +626,7 @@ class starcluster(object):
 
 		outfile.write('\n')
 
-
-	def snapout(self, return_dwdt=False, remnants=False):
+	def snapout(self, fmt='mxv'):
 
 		m=self.stars.mass.value_in(units.MSun)
 		x=self.stars.x.value_in(units.parsec)
@@ -683,20 +637,10 @@ class starcluster(object):
 		vz=self.stars.vz.value_in(units.kms)
 		ids=self.ids
 
-		if remnants:
-			kw=self.kw
-		else:
-			kw=np.ones(len(x))
-
-		if return_dwdt:
+		if fmt=='mxv':
+			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,x,y,z,vx,vy,vz,ids,kw,self.dwdt]))
+		elif fmt=='mvx':
 			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids,kw,self.dwdt]))
-
-		else:
-			np.savetxt('%s.csv' % str(self.niteration).zfill(5),np.column_stack([m,vx,vy,vz,x,y,z,ids,kw]))
-
-		#write_set_to_file(self.stars,'%s.csv' % str(self.niteration).zfill(5))
-
-
 
 class drift_without_gravity(object):
     def __init__(self, convert_nbody, time= 0 |units.Myr):
