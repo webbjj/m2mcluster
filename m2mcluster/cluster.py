@@ -185,7 +185,7 @@ class starcluster(object):
 
 		#Primary format
 		if fmt=='mxv':
-			m,x,y,z,vx,vy,vz,ids,kw,dwdt=data.astype(float)
+			mass,x,y,z,vx,vy,vz,ids,kw,dwdt=data.astype(float)
 			self.kw=kw
 		#Legacy
 		elif fmt=='original':
